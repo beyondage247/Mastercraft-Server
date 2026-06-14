@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{title}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #C0392B;
+      --dark: #1a1a1a;
+      --muted: #777;
+      --light: #f5f5f5;
+      --border: #e0e0e0;
+      --green: #2e7d32;
+      --white: #ffffff;
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Source Sans 3', sans-serif;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--white);
+      color: var(--dark);
+      padding: 0;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .page {
+      background: var(--white);
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      page-break-after: always;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding: 32px 48px 24px;
+      border-bottom: 3px solid var(--red);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      gap: 24px;
+    }
+
+    .logo-block {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .logo-block img {
+      display: block;
+      width: 150px;
+      height: auto;
+    }
+
+    .company-info {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .company-info strong {
+      display: block;
+      font-size: 13px;
+      color: var(--dark);
+      font-weight: 600;
+    }
+
+    .invoice-meta {
+      flex-shrink: 0;
+      text-align: right;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      min-width: 145px;
+    }
+
+    .invoice-meta .invoice-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .invoice-meta .issue-label {
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .accent-bar {
+      height: 5px;
+      background: linear-gradient(90deg, var(--red) 60%, #e57368 100%);
+    }
+
+    .project-section {
+      padding: 32px 48px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .project-section h1 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .project-section p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr 1fr;
+      padding: 0 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .summary-cell {
+      padding: 22px 24px 18px 0;
+      border-right: 1px solid var(--border);
+    }
+
+    .summary-cell:not(:first-child) {
+      padding-left: 24px;
+    }
+
+    .summary-cell:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+
+    .summary-cell .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-cell .value {
+      font-size: 13px;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    .summary-cell .value strong {
+      font-size: 13px;
+    }
+
+    .summary-cell .amount-big {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.2;
+    }
+
+    .summary-cell .due-date {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .items-section {
+      padding: 0 48px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .items-table thead tr {
+      border-bottom: 2px solid var(--dark);
+    }
+
+    .items-table thead th {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 0 10px;
+      text-align: left;
+    }
+
+    .items-table thead th:not(:first-child),
+    .items-table tbody td:not(:first-child) {
+      text-align: right;
+    }
+
+    .items-table tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .items-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .items-table tbody td {
+      padding: 11px 0;
+      color: var(--dark);
+      vertical-align: top;
+    }
+
+    .items-table .subtotal-row td {
+      padding: 14px 0 10px;
+      font-weight: 700;
+      font-size: 14px;
+      border-top: 2px solid var(--dark);
+      border-bottom: none;
+    }
+
+    .totals-section {
+      padding: 0 48px 16px;
+      border-top: none;
+    }
+
+    .tax-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 5px 0;
+    }
+
+    .total-due-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0 12px;
+      border-top: 2px solid var(--dark);
+      border-bottom: 2px solid var(--dark);
+      margin-top: 8px;
+    }
+
+    .total-due-row .label {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .total-due-row .amount {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .payment-breakdown {
+      padding: 0 48px;
+      border-bottom: none;
+    }
+
+    .payment-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .payment-line:last-child {
+      border-bottom: none;
+    }
+
+    .payment-line .p-label {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--dark);
+    }
+
+    .payment-line .p-meta {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .payment-line .p-amount {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+      white-space: nowrap;
+    }
+
+    .payments-log {
+      padding: 20px 48px 0;
+    }
+
+    .payments-log .p-title,
+    .notes-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .payment-entry {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      font-size: 13px;
+      color: var(--dark);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .payment-entry:last-child {
+      border-bottom: none;
+    }
+
+    .payment-entry .meta {
+      line-height: 1.6;
+    }
+
+    .payment-entry .meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .payment-entry .p-amount {
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .notes-section {
+      padding: 20px 48px 32px;
+    }
+
+    .note-card {
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .note-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .note-card .note-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .note-card p {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--dark);
+      white-space: pre-wrap;
+    }
+
+    .page-num {
+      text-align: right;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 10px 48px 16px;
+      background: var(--light);
+      margin-top: auto;
+    }
+
+    .page-bottom {
+      margin-top: 0;
+    }
+
+    .page-content-spacer {
+      min-height: 40px;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .page { margin: 0; width: 210mm; min-height: 297mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-block">
+        <img src="{{logoUrl}}" alt="{{company.name}} logo" />
+      </div>
+      <div class="company-info">
+        <strong>{{company.name}}</strong>
+        {{company.addressLine1}}<br/>
+        {{company.addressLine2}}<br/>
+        {{company.email}} | {{company.phone}}
+      </div>
+    </div>
+    <div class="invoice-meta">
+      <div class="invoice-num">Invoice #{{docNumber}}</div>
+      <div class="issue-label">Issue date</div>
+      <div>{{dateIssued}}</div>
+    </div>
+  </div>
+
+  <div class="accent-bar"></div>
+
+  <div class="project-section">
+    <h1>{{projectName}}</h1>
+    <p>{{introText}}</p>
+  </div>
+
+  <div class="summary-row">
+    <div class="summary-cell">
+      <div class="label">Customer</div>
+      <div class="value">
+        <strong>{{customerName}}</strong><br/>
+        {{#if customerCompany}}{{customerCompany}}<br/>{{/if}}
+        {{customerEmail}}<br/>
+        {{#if customerPhone}}{{customerPhone}}<br/>{{/if}}
+        {{#if customerLocation}}{{customerLocation}}{{/if}}
+      </div>
+    </div>
+    <div class="summary-cell">
+      <div class="label">Invoice Details</div>
+      <div class="value">
+        PDF created {{generatedOn}}<br/>
+        <span class="amount-big">{{total}}</span>
+      </div>
+    </div>
+    {{#each summaryCards}}
+    <div class="summary-cell">
+      <div class="label">{{label}}</div>
+      <div class="value">
+        {{#if isAmount}}<span class="amount-big">{{value}}</span>{{else}}{{value}}{{/if}}
+        {{#if secondary}}<div class="due-date">{{secondary}}</div>{{/if}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <div class="items-section">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Items</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each firstPageItems}}
+        <tr>
+          <td>{{productName}}</td>
+          <td>{{quantity}}</td>
+          <td>{{unitPrice}}</td>
+          <td>{{amount}}</td>
+        </tr>
+        {{/each}}
+        {{#if showSubtotalOnFirstPage}}
+        <tr class="subtotal-row">
+          <td colspan="3">Subtotal</td>
+          <td>{{subtotal}}</td>
+        </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+
+  {{#if showFinalSectionOnFirstPage}}
+  <div class="page-bottom">
+    <div class="totals-section">
+      {{#each adjustmentRows}}
+      <div class="tax-line">
+        <span>{{label}}</span>
+        <span>{{amount}}</span>
+      </div>
+      {{/each}}
+      <div class="total-due-row">
+        <span class="label">Total Due</span>
+        <span class="amount">{{total}}</span>
+      </div>
+    </div>
+
+    <div class="payment-breakdown">
+      {{#each paymentRows}}
+      <div class="payment-line">
+        <div>
+          <div class="p-label">{{name}}</div>
+          <div class="p-meta">{{meta}}</div>
+        </div>
+        <div class="p-amount">{{amount}}</div>
+      </div>
+      {{/each}}
+    </div>
+
+    {{#if hasPayments}}
+    <div class="payments-log">
+      <div class="p-title">Payments</div>
+      {{#each payments}}
+      <div class="payment-entry">
+        <div class="meta">
+          {{date}} ({{method}})
+          <span>{{reference}}</span>
+        </div>
+        <div class="p-amount">{{amount}}</div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if hasNotes}}
+    <div class="notes-section">
+      <div class="notes-title">Notes</div>
+      {{#each notes}}
+      <div class="note-card">
+        <div class="note-label">{{title}}</div>
+        <p>{{body}}</p>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    <div class="page-num">Page 1 of {{totalPages}}</div>
+  </div>
+  {{else}}
+  <div class="page-content-spacer"></div>
+  <div class="page-num">Page 1 of {{totalPages}}</div>
+  {{/if}}
+</div>
+
+{{#each continuationPages}}
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-block">
+        <img src="{{../logoUrl}}" alt="{{../company.name}} logo" />
+      </div>
+      <div class="company-info">
+        <strong>{{../company.name}}</strong>
+        {{../company.addressLine1}}<br/>
+        {{../company.addressLine2}}<br/>
+        {{../company.email}} | {{../company.phone}}
+      </div>
+    </div>
+    <div class="invoice-meta">
+      <div class="invoice-num">Invoice #{{../docNumber}}</div>
+      <div class="issue-label">Issue date</div>
+      <div>{{../dateIssued}}</div>
+    </div>
+  </div>
+
+  <div class="accent-bar"></div>
+
+  <div class="items-section">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Items</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{productName}}</td>
+          <td>{{quantity}}</td>
+          <td>{{unitPrice}}</td>
+          <td>{{amount}}</td>
+        </tr>
+        {{/each}}
+        {{#if showSubtotal}}
+        <tr class="subtotal-row">
+          <td colspan="3">Subtotal</td>
+          <td>{{../subtotal}}</td>
+        </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+
+  {{#if showFinalSection}}
+  <div class="page-bottom">
+    <div class="totals-section">
+      {{#each ../adjustmentRows}}
+      <div class="tax-line">
+        <span>{{label}}</span>
+        <span>{{amount}}</span>
+      </div>
+      {{/each}}
+      <div class="total-due-row">
+        <span class="label">Total Due</span>
+        <span class="amount">{{../total}}</span>
+      </div>
+    </div>
+
+    <div class="payment-breakdown">
+      {{#each ../paymentRows}}
+      <div class="payment-line">
+        <div>
+          <div class="p-label">{{name}}</div>
+          <div class="p-meta">{{meta}}</div>
+        </div>
+        <div class="p-amount">{{amount}}</div>
+      </div>
+      {{/each}}
+    </div>
+
+    {{#if ../hasPayments}}
+    <div class="payments-log">
+      <div class="p-title">Payments</div>
+      {{#each ../payments}}
+      <div class="payment-entry">
+        <div class="meta">
+          {{date}} ({{method}})
+          <span>{{reference}}</span>
+        </div>
+        <div class="p-amount">{{amount}}</div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if ../hasNotes}}
+    <div class="notes-section">
+      <div class="notes-title">Notes</div>
+      {{#each ../notes}}
+      <div class="note-card">
+        <div class="note-label">{{title}}</div>
+        <p>{{body}}</p>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    <div class="page-num">Page {{pageNumber}} of {{../totalPages}}</div>
+  </div>
+  {{else}}
+  <div class="page-content-spacer"></div>
+  <div class="page-num">Page {{pageNumber}} of {{../totalPages}}</div>
+  {{/if}}
+</div>
+{{/each}}
+
+</body>
+</html>

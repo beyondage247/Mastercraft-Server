@@ -1,0 +1,420 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STAFF
+  CLIENT
+}
+
+enum ClientCredit {
+  COD
+  CREDIT_ACCOUNT
+}
+
+model User {
+  id                        String    @id @default(uuid()) @db.Uuid
+  name                      String
+  email                     String    @unique
+  password                  String
+  passwordResetOtpHash      String?
+  passwordResetOtpExpiresAt DateTime?
+  role                      Role      @default(CLIENT)
+  isAdmin                   Boolean   @default(false)
+  accountPartner            User?     @relation("StaffClients", fields: [accountPartnerId], references: [id], onDelete: SetNull)
+  accountPartnerId          String?   @db.Uuid
+  managedClients            User[]    @relation("StaffClients")
+  createdAt                 DateTime  @default(now())
+
+  // Client Specific Fields
+  phone             String?
+  company           String?
+  additionalContact String?
+  additionalEmail   String?
+  clientCredit      ClientCredit?
+  projects          Project[]
+  uploads           Upload[]
+  projectComments   ProjectComment[]
+  reports           Report[]
+  commissions       Commission[]     @relation("StaffCommissions")
+  clientCommissions Commission[]     @relation("ClientCommissions")
+
+  @@index([accountPartnerId])
+}
+
+enum ProjectStatus {
+  PENDING
+  QUOTED
+  LOST
+  IN_PRODUCTION
+  COMPLETED
+}
+
+enum QuoteStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_REVIEW
+}
+
+enum ProjectStageType {
+  MIL
+  BUILD_ASSEMBLE
+  FINISHING
+  DELIVERY
+  INSTALL
+}
+
+enum AvailabilityStatus {
+  EMAIL_FOR_QUOTE
+  IN_STOCK
+  SPECIAL_ORDER
+}
+
+enum PaymentMethod {
+  ACH
+  WIRE
+  CREDIT_CARD
+  CHECK
+}
+
+enum QuotePaymentScheduleType {
+  FULL_PAYMENT
+  DEPOSIT_AND_BALANCE
+  DEPOSIT_AND_SPLIT_BALANCE
+}
+
+enum QuotePaymentScheduleItemType {
+  FULL_PAYMENT
+  DEPOSIT
+  BALANCE
+  SPLIT_PAYMENT
+}
+
+enum QuotePaymentScheduleAmountType {
+  FIXED
+  PERCENTAGE
+}
+
+enum QuotePaymentScheduleDateType {
+  FIXED_DATE
+  INVOICE_GENERATION
+}
+
+enum ProjectPaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum CommissionStatus {
+  QUOTED_COMMISSION
+  APPROVED_COMMISSION
+  PAID
+}
+
+model Project {
+  id            String               @id @default(uuid()) @db.Uuid
+  fabrication   Int
+  description   String
+  location      String
+  name          String
+  status        ProjectStatus
+  paymentStatus ProjectPaymentStatus @default(UNPAID)
+  startDate     DateTime
+  endDate       DateTime
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  stages       ProjectStage[]
+  comments     ProjectComment[]
+  quotes       Quote[]
+  invoices     Invoice[]
+  payments     Payment[]
+  client       User             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  clientId     String           @db.Uuid
+  attachment   Attachment?      @relation(fields: [attachmentId], references: [id])
+  attachmentId String?          @db.Uuid
+
+  @@index([clientId])
+}
+
+model ProjectStage {
+  id            String           @id @default(uuid()) @db.Uuid
+  projectId     String           @db.Uuid
+  stage         ProjectStageType
+  hoursBudgeted Int
+  hoursSpent    Int              @default(0)
+  progress      Int              @default(0)
+  startDate     DateTime
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, stage])
+  @@index([projectId])
+}
+
+model ProjectComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  message   String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+
+  @@index([projectId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model CatalogItem {
+  id                   String               @id @default(uuid()) @db.Uuid
+  productName          String
+  productNameKey       String               @unique
+  itemCode             String?              @unique
+  subcategory          String?
+  material             String?
+  supplierCost         Decimal?
+  ourPrice             Decimal?
+  markUp               Decimal?
+  availabilityStatuses AvailabilityStatus[]
+  category             String
+  supplier             String
+  sizeDimension        String?
+  unitMeasure          String?
+  minReserve           Int?
+  inStock              Int?
+  notes                String?
+  styleProfile         String?
+  supplierCatalogue    String?
+  active               Boolean
+  lastPriceUpdate      DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+}
+
+model InventoryItem {
+  id                   String               @id @default(uuid()) @db.Uuid
+  productName          String
+  productNameKey       String               @unique
+  itemCode             String?              @unique
+  category             String
+  subcategory          String?
+  material             String?
+  sizeDimension        String?
+  unitMeasure          String?
+  supplier             String
+  availabilityStatuses AvailabilityStatus[]
+  minReserve           Int?
+  inStock              Int?
+  notes                String?
+  active               Boolean
+  lastPriceUpdate      DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+}
+
+model Quote {
+  id            String      @id @default(uuid()) @db.Uuid
+  name          String
+  quoteId       String      @unique
+  status        QuoteStatus @default(PENDING)
+  message       String?
+  clientComment String?
+  dateIssued    DateTime
+  validUntil    DateTime
+  subtotal      Decimal
+  tax           Decimal
+  taxAmount     Decimal
+  discount      Decimal     @default(0)
+  shippingFee   Decimal     @default(0)
+  total         Decimal
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String                @db.Uuid
+  lineItems       QuoteLineItem[]
+  paymentSchedule QuotePaymentSchedule?
+  invoices        Invoice[]
+  commission      Commission?
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model Commission {
+  id                   String           @id @default(uuid()) @db.Uuid
+  total                Decimal
+  percentageCommission Decimal          @default(0)
+  amount               Decimal          @default(0)
+  status               CommissionStatus @default(QUOTED_COMMISSION)
+  paidAt               DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  quote    Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quoteId  String @unique @db.Uuid
+  client   User   @relation("ClientCommissions", fields: [clientId], references: [id], onDelete: Restrict)
+  clientId String @db.Uuid
+  staff    User   @relation("StaffCommissions", fields: [staffId], references: [id], onDelete: Restrict)
+  staffId  String @db.Uuid
+
+  @@index([clientId, createdAt])
+  @@index([staffId, createdAt])
+  @@index([status, createdAt])
+}
+
+model QuoteLineItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  quoteId     String   @db.Uuid
+  productName String
+  ourPrice    Decimal?
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+model QuotePaymentSchedule {
+  id          String                   @id @default(uuid()) @db.Uuid
+  quoteId     String                   @unique @db.Uuid
+  type        QuotePaymentScheduleType
+  totalAmount Decimal
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  quote Quote                      @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  items QuotePaymentScheduleItem[]
+
+  @@index([type])
+}
+
+model QuotePaymentScheduleItem {
+  id         String                          @id @default(uuid()) @db.Uuid
+  scheduleId String                          @db.Uuid
+  itemType   QuotePaymentScheduleItemType
+  name       String
+  amountType QuotePaymentScheduleAmountType?
+  percentage Decimal
+  amount     Decimal
+  dateType   QuotePaymentScheduleDateType
+  dueDate    DateTime?
+  position   Int
+  createdAt  DateTime                        @default(now())
+  updatedAt  DateTime                        @updatedAt
+
+  schedule QuotePaymentSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId, position])
+  @@index([itemType])
+}
+
+model Invoice {
+  id            String      @id @default(uuid()) @db.Uuid
+  name          String
+  invoiceId     String      @unique
+  status        QuoteStatus @default(PENDING)
+  message       String?
+  clientComment String?
+  dateIssued    DateTime
+  validUntil    DateTime
+  subtotal      Decimal
+  tax           Decimal
+  taxAmount     Decimal
+  discount      Decimal     @default(0)
+  shippingFee   Decimal     @default(0)
+  total         Decimal
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  quote     Quote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quoteId   String            @db.Uuid
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String            @db.Uuid
+  lineItems InvoiceLineItem[]
+  payments  Payment[]
+
+  @@index([quoteId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  invoiceId   String   @db.Uuid
+  productName String
+  ourPrice    Decimal?
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id        String        @id @default(uuid()) @db.Uuid
+  createdAt DateTime      @default(now())
+  reference String        @unique
+  method    PaymentMethod
+  amount    Decimal
+  invoice   Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId String        @db.Uuid
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String        @db.Uuid
+  updatedAt DateTime      @updatedAt
+
+  @@index([invoiceId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([method])
+}
+
+model Report {
+  id              String   @id @default(uuid()) @db.Uuid
+  startDate       DateTime
+  endDate         DateTime
+  coldCalls       Int
+  siteVisit       Int
+  coldEmails      Int
+  coffeeLunch     Int
+  socialMedia     Int
+  newCustomers    Int
+  networkingEvent String
+  notes           String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @db.Uuid
+
+  @@index([userId, createdAt])
+  @@index([startDate, endDate])
+}
+
+model Upload {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+  size Int
+  type String
+  data Bytes
+
+  createdAt    DateTime    @default(now())
+  user         User?       @relation(fields: [userId], references: [id])
+  userId       String?     @db.Uuid
+  attachment   Attachment? @relation(fields: [attachmentId], references: [id])
+  attachmentId String?     @db.Uuid
+}
+
+model Attachment {
+  id      String   @id @default(uuid()) @db.Uuid
+  uploads Upload[]
+
+  project Project[]
+}

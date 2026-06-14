@@ -1,0 +1,700 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Invoice {{invoiceId}}</title>
+  </head>
+  <body
+    style='
+      margin: 0;
+      padding: 0;
+      background-color: #f4f0ea;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #24303b;
+    '
+  >
+    <table
+      role='presentation'
+      width='100%'
+      cellpadding='0'
+      cellspacing='0'
+      style='background-color: #f4f0ea; padding: 32px 12px'
+    >
+      <tr>
+        <td align='center'>
+          <table
+            role='presentation'
+            width='100%'
+            cellpadding='0'
+            cellspacing='0'
+            style='
+              max-width: 720px;
+              background-color: #ffffff;
+              border-collapse: collapse;
+              box-shadow: 0 14px 38px rgba(36, 48, 59, 0.08);
+            '
+          >
+            <tr>
+              <td style='padding: 32px 48px 24px'>
+                <table
+                  role='presentation'
+                  width='100%'
+                  cellpadding='0'
+                  cellspacing='0'
+                >
+                  <tr>
+                    <td style='text-align: center; vertical-align: top; padding-bottom: 20px'>
+                      <img
+                        src='https://res.cloudinary.com/dqe4xzwoe/image/upload/v1781170296/Others/WhatsApp_Image_2026-06-10_at_1.34.02_PM-removebg-preview_u874ju.png'
+                        alt='Mastercraft Products'
+                        style='display: block; width: 480px; max-width: 100%; height: auto; margin: 0 auto'
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style='text-align: right; vertical-align: top'>
+                      <p
+                        style='
+                          margin: 0 0 8px;
+                          font-size: 12px;
+                          letter-spacing: 0.16em;
+                          text-transform: uppercase;
+                          color: #7f8b96;
+                        '
+                      >
+                        Invoice Sent
+                      </p>
+                      <p
+                        style='
+                          margin: 0;
+                          font-size: 16px;
+                          font-weight: 700;
+                          color: #24303b;
+                        '
+                      >
+                        {{projectName}}
+                      </p>
+                      <p
+                        style='
+                          margin: 8px 0 4px;
+                          font-size: 12px;
+                          letter-spacing: 0.12em;
+                          text-transform: uppercase;
+                          color: #7f8b96;
+                          text-align: left;
+                        '
+                      >
+                        Total Amount
+                      </p>
+                      <p
+                        style='
+                          margin: 0 0 4px;
+                          font-size: 16px;
+                          font-weight: 700;
+                          line-height: 1.1;
+                          color: #24303b;
+                          text-align: left;
+                        '
+                      >
+                        {{total}}
+                      </p>
+                      <p
+                        style='
+                          margin: 0;
+                          font-size: 16px;
+                          line-height: 1.4;
+                          color: #667483;
+                        '
+                      >
+                        Due on
+                        {{validUntil}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style='padding: 0 48px'>
+                <div style='height: 4px; background-color: #c90000'></div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style='padding: 30px 48px 22px'>
+                <table
+                  role='presentation'
+                  width='100%'
+                  cellpadding='0'
+                  cellspacing='0'
+                  style='border-collapse: collapse'
+                >
+                  <tr>
+                    <td
+                      width='50%'
+                      style='vertical-align: top; padding-right: 14px'
+                    >
+                      {{#if projectLocation}}
+                        <p
+                          style='
+                            margin: 0 0 10px;
+                            font-size: 16px;
+                            font-weight: 700;
+                            line-height: 1.6;
+                            color: #24303b;
+                          '
+                        >
+                          {{projectLocation}}
+                        </p>
+                      {{/if}}
+                      <p
+                        style='
+                          margin: 0 0 4px;
+                          font-size: 15px;
+                          line-height: 1.6;
+                          color: #4d5a67;
+                        '
+                      >
+                        Invoice
+                        {{invoiceId}}
+                      </p>
+                      <p
+                        style='
+                          margin: 0;
+                          font-size: 15px;
+                          line-height: 1.6;
+                          color: #4d5a67;
+                        '
+                      >
+                        {{dateIssued}}
+                      </p>
+                    </td>
+                    <td
+                      width='50%'
+                      style='vertical-align: top; padding-left: 14px'
+                    >
+                      <p
+                        style='
+                          margin: 0 0 10px;
+                          font-size: 16px;
+                          font-weight: 700;
+                          line-height: 1.6;
+                          color: #24303b;
+                        '
+                      >
+                        Customer
+                      </p>
+                      <p
+                        style='
+                          margin: 0 0 4px;
+                          font-size: 15px;
+                          line-height: 1.6;
+                          color: #4d5a67;
+                        '
+                      >
+                        {{customerName}}
+                      </p>
+                      {{#if clientCompany}}
+                        <p
+                          style='
+                            margin: 0 0 4px;
+                            font-size: 15px;
+                            line-height: 1.6;
+                            color: #4d5a67;
+                          '
+                        >
+                          {{clientCompany}}
+                        </p>
+                      {{/if}}
+                      <p
+                        style='
+                          margin: 0 0 4px;
+                          font-size: 15px;
+                          line-height: 1.6;
+                          color: #4d5a67;
+                        '
+                      >
+                        {{customerEmail}}
+                      </p>
+                      {{#if clientPhone}}
+                        <p
+                          style='
+                            margin: 0;
+                            font-size: 15px;
+                            line-height: 1.6;
+                            color: #4d5a67;
+                          '
+                        >
+                          {{clientPhone}}
+                        </p>
+                      {{/if}}
+                    </td>
+                  </tr>
+                </table>
+
+                {{#if additionalRecipientEmail}}
+                  <table
+                    role='presentation'
+                    width='100%'
+                    cellpadding='0'
+                    cellspacing='0'
+                    style='border-collapse: collapse; margin-top: 22px'
+                  >
+                    <tr>
+                      <td>
+                        <p
+                          style='
+                            margin: 0 0 8px;
+                            font-size: 16px;
+                            font-weight: 700;
+                            line-height: 1.6;
+                            color: #24303b;
+                          '
+                        >
+                          Additional Recipient
+                        </p>
+                        <p
+                          style='
+                            margin: 0;
+                            font-size: 15px;
+                            line-height: 1.6;
+                            color: #c90000;
+                          '
+                        >
+                          {{additionalRecipientEmail}}
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                {{/if}}
+              </td>
+            </tr>
+
+            <tr>
+              <td style='padding: 0 48px 24px'>
+                <table
+                  role='presentation'
+                  cellpadding='0'
+                  cellspacing='0'
+                  style='border-collapse: collapse'
+                >
+                  <tr>
+                    <td
+                      style='
+                        background-color: #c90000;
+                        border-radius: 999px;
+                      '
+                    >
+                      <a
+                        href='{{portalUrl}}'
+                        style='
+                          display: inline-block;
+                          padding: 14px 24px;
+                          font-size: 14px;
+                          font-weight: 700;
+                          color: #ffffff;
+                          text-decoration: none;
+                        '
+                      >
+                        View Invoice
+                      </a>
+                    </td>
+                    <td style='padding-left: 12px'>
+                      <a
+                        href='{{invoiceDownloadUrl}}'
+                        style='
+                          display: inline-block;
+                          padding: 13px 24px;
+                          font-size: 14px;
+                          font-weight: 700;
+                          color: #c90000;
+                          text-decoration: none;
+                          border: 1px solid #c90000;
+                          border-radius: 999px;
+                        '
+                      >
+                        Download Invoice PDF
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style='padding: 0 48px'>
+                <div style='height: 4px; background-color: #c90000'></div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style='padding: 30px 48px 0'>
+                <p
+                  style='
+                    margin: 0 0 10px;
+                    font-size: 15px;
+                    line-height: 1.8;
+                    color: #4d5a67;
+                  '
+                >
+                  We look forward to working with you.
+                </p>
+                <p
+                  style='
+                    margin: 0;
+                    font-size: 15px;
+                    line-height: 1.8;
+                    color: #4d5a67;
+                  '
+                >
+                  This invoice was generated after quote
+                  {{quoteId}}
+                  was accepted.
+                </p>
+              </td>
+            </tr>
+
+            {{#if message}}
+              <tr>
+                <td style='padding: 22px 48px 0'>
+                  <table
+                    role='presentation'
+                    width='100%'
+                    cellpadding='0'
+                    cellspacing='0'
+                    style='
+                      border-collapse: collapse;
+                      border: 1px solid #d9e0e6;
+                      background-color: #fafcfd;
+                    '
+                  >
+                    <tr>
+                      <td style='padding: 18px 20px'>
+                        <p
+                          style='
+                            margin: 0 0 8px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            letter-spacing: 0.06em;
+                            text-transform: uppercase;
+                            color: #607080;
+                          '
+                        >
+                          Message
+                        </p>
+                        <p
+                          style='
+                            margin: 0;
+                            font-size: 15px;
+                            line-height: 1.7;
+                            color: #4d5a67;
+                          '
+                        >
+                          {{message}}
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            {{/if}}
+
+            <tr>
+              <td style='padding: 28px 48px 0'>
+                <table
+                  role='presentation'
+                  width='100%'
+                  cellpadding='0'
+                  cellspacing='0'
+                  style='
+                    border-collapse: collapse;
+                    border: 1px solid #d9e0e6;
+                    background-color: #ffffff;
+                  '
+                >
+                  <tr>
+                    <td style='padding: 22px 28px 8px'>
+                      <p
+                        style='
+                          margin: 0;
+                          font-size: 16px;
+                          font-weight: 700;
+                          color: #24303b;
+                        '
+                      >
+                        Invoice Summary
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 0 28px'>
+                      <table
+                        role='presentation'
+                        width='100%'
+                        cellpadding='0'
+                        cellspacing='0'
+                        style='border-collapse: collapse'
+                      >
+                        {{#each lineItems}}
+                          <tr>
+                            <td
+                              style='
+                                padding: 18px 0;
+                                border-bottom: 1px solid #edf1f4;
+                                vertical-align: top;
+                              '
+                            >
+                              <p
+                                style='
+                                  margin: 0 0 6px;
+                                  font-size: 15px;
+                                  font-weight: 700;
+                                  line-height: 1.6;
+                                  color: #24303b;
+                                '
+                              >
+                                {{productName}}
+                              </p>
+                              <p
+                                style='
+                                  margin: 0;
+                                  font-size: 14px;
+                                  line-height: 1.6;
+                                  color: #7f8b96;
+                                '
+                              >
+                                {{#if price}}{{price}} each{{else}}Price to be
+                                  confirmed{{/if}}
+                                · Qty
+                                {{quantity}}
+                              </p>
+                            </td>
+                            <td
+                              align='right'
+                              style='
+                                padding: 18px 0 18px 18px;
+                                border-bottom: 1px solid #edf1f4;
+                                vertical-align: top;
+                                font-size: 15px;
+                                font-weight: 700;
+                                line-height: 1.6;
+                                color: #24303b;
+                                white-space: nowrap;
+                              '
+                            >
+                              {{#if amount}}{{amount}}{{else}}TBD{{/if}}
+                            </td>
+                          </tr>
+                        {{/each}}
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 6px 28px 24px'>
+                      <table
+                        role='presentation'
+                        align='right'
+                        cellpadding='0'
+                        cellspacing='0'
+                        style='min-width: 280px; border-collapse: collapse'
+                      >
+                        <tr>
+                          <td
+                            style='
+                              padding: 10px 18px 10px 0;
+                              font-size: 15px;
+                              color: #4d5a67;
+                              border-bottom: 1px solid #edf1f4;
+                            '
+                          >
+                            Subtotal
+                          </td>
+                          <td
+                            align='right'
+                            style='
+                              padding: 10px 0;
+                              font-size: 15px;
+                              color: #4d5a67;
+                              border-bottom: 1px solid #edf1f4;
+                            '
+                          >
+                            {{subtotal}}
+                          </td>
+                        </tr>
+                        {{#if showTax}}
+                          <tr>
+                            <td
+                              style='
+                                padding: 10px 18px 10px 0;
+                                font-size: 15px;
+                                color: #4d5a67;
+                                border-bottom: 1px solid #edf1f4;
+                              '
+                            >
+                              {{taxLabel}}
+                            </td>
+                            <td
+                              align='right'
+                              style='
+                                padding: 10px 0;
+                                font-size: 15px;
+                                color: #4d5a67;
+                                border-bottom: 1px solid #edf1f4;
+                              '
+                            >
+                              {{taxAmount}}
+                            </td>
+                          </tr>
+                        {{/if}}
+                        {{#if showDiscount}}
+                          <tr>
+                            <td
+                              style='
+                                padding: 10px 18px 10px 0;
+                                font-size: 15px;
+                                color: #4d5a67;
+                                border-bottom: 1px solid #edf1f4;
+                              '
+                            >
+                              Discount
+                            </td>
+                            <td
+                              align='right'
+                              style='
+                                padding: 10px 0;
+                                font-size: 15px;
+                                color: #4d5a67;
+                                border-bottom: 1px solid #edf1f4;
+                              '
+                            >
+                              -{{discount}}
+                            </td>
+                          </tr>
+                        {{/if}}
+                        {{#if showShippingFee}}
+                          <tr>
+                            <td
+                              style='
+                                padding: 10px 18px 10px 0;
+                                font-size: 15px;
+                                color: #4d5a67;
+                                border-bottom: 1px solid #edf1f4;
+                              '
+                            >
+                              Shipping
+                            </td>
+                            <td
+                              align='right'
+                              style='
+                                padding: 10px 0;
+                                font-size: 15px;
+                                color: #4d5a67;
+                                border-bottom: 1px solid #edf1f4;
+                              '
+                            >
+                              {{shippingFee}}
+                            </td>
+                          </tr>
+                        {{/if}}
+                        <tr>
+                          <td
+                            style='
+                              padding: 14px 18px 0 0;
+                              font-size: 18px;
+                              font-weight: 700;
+                              color: #24303b;
+                            '
+                          >
+                            Total Due
+                          </td>
+                          <td
+                            align='right'
+                            style='
+                              padding: 14px 0 0;
+                              font-size: 22px;
+                              font-weight: 700;
+                              color: #24303b;
+                            '
+                          >
+                            {{total}}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            {{#if contactEmail}}
+              <tr>
+                <td style='padding: 24px 48px 0'>
+                  <table
+                    role='presentation'
+                    width='100%'
+                    cellpadding='0'
+                    cellspacing='0'
+                    style='
+                      border-collapse: collapse;
+                      border: 1px solid #d9e0e6;
+                      background-color: #fafcfd;
+                    '
+                  >
+                    <tr>
+                      <td style='padding: 18px 20px'>
+                        <p
+                          style='
+                            margin: 0 0 8px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            letter-spacing: 0.06em;
+                            text-transform: uppercase;
+                            color: #607080;
+                          '
+                        >
+                          Questions
+                        </p>
+                        <p
+                          style='
+                            margin: 0;
+                            font-size: 15px;
+                            line-height: 1.7;
+                            color: #4d5a67;
+                          '
+                        >
+                          Contact
+                          {{#if contactName}}{{contactName}}{{else}}your account
+                            partner{{/if}}
+                          at
+                          {{contactEmail}}
+                          or call
+                          {{companyPhone}}.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            {{/if}}
+
+            <tr>
+              <td
+                style='
+                  padding: 28px 48px 36px;
+                  font-size: 14px;
+                  line-height: 1.7;
+                  color: #7f8b96;
+                '
+              >
+                This is an automated invoice notification. Please use your
+                normal project contact for any follow-up questions or call
+                {{companyPhone}}.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
