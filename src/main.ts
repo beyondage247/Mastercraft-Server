@@ -14,6 +14,7 @@ async function bootstrap() {
       'http://127.0.0.1:5173',
       'https://portal-mastercraft-products-com.onrender.com',
       'https://portal.mastercraft-products.com',
+      'https://dev-portal.mastercraft-products.com',
     ],
     credentials: true,
   });
