@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { extname } from 'path';
 import { PrismaService } from 'src/services/prisma/prisma.service';
 import { bad } from 'src/utils/error.utils';
-import { UpdateCatalogItemInput } from './services.types';
+import { CreateCatalogItemInput, UpdateCatalogItemInput } from './services.types';
 import {
   RawCatalogItemRow,
   hasOwnProperty,
@@ -12,13 +12,17 @@ import {
   mapImportRow,
   normalizeCatalogItemImportRow,
   normalizeCatalogItemUpdateInput,
+  normalizeProductNameKey,
+  normalizeOptionalString,
 } from './services.utils';
 
 const catalogItemSelect = {
   id: true,
   productName: true,
+  productNameKey: true,
   itemCode: true,
   subcategory: true,
+  material: true,
   supplierCost: true,
   ourPrice: true,
   markUp: true,
@@ -33,7 +37,6 @@ const catalogItemSelect = {
   lastPriceUpdate: true,
   createdAt: true,
   updatedAt: true,
-  productNameKey: true,
 } satisfies Prisma.CatalogItemSelect;
 
 type CatalogItemRecord = Prisma.CatalogItemGetPayload<{
@@ -66,6 +69,46 @@ export class ServicesService {
 
     if (!item) bad('Catalog item not found', 404);
     return this.serializeCatalogItem(item);
+  }
+
+  async createCatalogItem(dto: CreateCatalogItemInput) {
+    const productName = dto.productName.trim();
+    const productNameKey = normalizeProductNameKey(productName);
+    const itemCode = normalizeOptionalString(dto.itemCode);
+
+    if (itemCode) {
+      await this.ensureUniqueField('itemCode', itemCode);
+    }
+    await this.ensureUniqueField('productNameKey', productNameKey);
+
+    const data = normalizeCatalogItemImportRow({
+      productName,
+      itemCode,
+      subcategory: dto.subcategory ?? null,
+      material: dto.material ?? null,
+      supplierCost: dto.supplierCost ?? null,
+      ourPrice: dto.ourPrice ?? null,
+      markUp: dto.markUp ?? null,
+      availabilityStatus: dto.availabilityStatus,
+      category: dto.category,
+      supplier: dto.supplier,
+      sizeDimension: dto.sizeDimension ?? null,
+      unitMeasure: dto.unitMeasure ?? null,
+      styleProfile: dto.styleProfile ?? null,
+      supplierCatalogue: dto.supplierCatalogue ?? null,
+      active: dto.active,
+      lastPriceUpdate: dto.lastPriceUpdate ?? null,
+    });
+
+    const item = await this.prisma.catalogItem.create({
+      data,
+      select: catalogItemSelect,
+    });
+
+    return {
+      message: 'Catalog item created successfully',
+      item: this.serializeCatalogItem(item),
+    };
   }
 
   async updateCatalogItem(id: string, dto: UpdateCatalogItemInput) {
@@ -227,14 +270,12 @@ export class ServicesService {
   private async ensureUniqueField(
     field: 'itemCode' | 'productNameKey',
     value: string,
-    currentId: string,
+    currentId?: string,
   ) {
     const existingItem = await this.prisma.catalogItem.findFirst({
       where: {
         [field]: value,
-        id: {
-          not: currentId,
-        },
+        id: currentId ? { not: currentId } : undefined,
       },
       select: {
         id: true,
@@ -301,6 +342,7 @@ export class ServicesService {
       productName: item.productName,
       itemCode: item.itemCode,
       subcategory: item.subcategory,
+      material: item.material,
       supplierCost: item.supplierCost?.toString() ?? null,
       ourPrice: item.ourPrice?.toString() ?? null,
       markUp: item.markUp?.toString() ?? null,

@@ -6,6 +6,7 @@ export const SERVICE_IMPORT_COLUMNS = [
   'productName',
   'itemCode',
   'subcategory',
+  'material',
   'supplierCost',
   'ourPrice',
   'markUp',
@@ -33,6 +34,7 @@ export type NormalizedCatalogItemInput = {
   productNameKey: string;
   itemCode: string | null;
   subcategory: string | null;
+  material: string | null;
   supplierCost: Prisma.Decimal | null;
   ourPrice: Prisma.Decimal | null;
   markUp: Prisma.Decimal | null;
@@ -50,9 +52,75 @@ export type NormalizedCatalogItemInput = {
 export type NormalizedCatalogItemUpdateInput =
   Partial<NormalizedCatalogItemInput>;
 
-const SERVICE_IMPORT_HEADER_MAP = new Map<string, ServiceImportColumn>(
-  SERVICE_IMPORT_COLUMNS.map((column) => [column.toLowerCase(), column]),
-);
+const SERVICE_IMPORT_HEADER_MAP = new Map<string, ServiceImportColumn>([
+  // productName
+  ['productname', 'productName'],
+  ['product name', 'productName'],
+  ['name', 'productName'],
+  // itemCode
+  ['itemcode', 'itemCode'],
+  ['item code', 'itemCode'],
+  ['sku', 'itemCode'],
+  ['sku / item code', 'itemCode'],
+  ['sku/item code', 'itemCode'],
+  // subcategory
+  ['subcategory', 'subcategory'],
+  ['subcategory / series', 'subcategory'],
+  ['subcategory/series', 'subcategory'],
+  ['series', 'subcategory'],
+  // material
+  ['material', 'material'],
+  ['species / material', 'material'],
+  ['species/material', 'material'],
+  ['species', 'material'],
+  // supplierCost
+  ['suppliercost', 'supplierCost'],
+  ['supplier cost', 'supplierCost'],
+  ['cost', 'supplierCost'],
+  // ourPrice
+  ['ourprice', 'ourPrice'],
+  ['our price', 'ourPrice'],
+  ['price', 'ourPrice'],
+  // markUp
+  ['markup', 'markUp'],
+  ['mark up', 'markUp'],
+  ['mark-up', 'markUp'],
+  // availabilityStatus
+  ['availabilitystatus', 'availabilityStatus'],
+  ['availability status', 'availabilityStatus'],
+  ['availability', 'availabilityStatus'],
+  // category
+  ['category', 'category'],
+  // supplier
+  ['supplier', 'supplier'],
+  // sizeDimension
+  ['sizedimension', 'sizeDimension'],
+  ['size / dimensions', 'sizeDimension'],
+  ['size/dimensions', 'sizeDimension'],
+  ['size / dimension', 'sizeDimension'],
+  ['size/dimension', 'sizeDimension'],
+  ['size', 'sizeDimension'],
+  ['dimensions', 'sizeDimension'],
+  // unitMeasure
+  ['unitmeasure', 'unitMeasure'],
+  ['unit of measure', 'unitMeasure'],
+  ['unit measure', 'unitMeasure'],
+  ['unit of measurement', 'unitMeasure'],
+  // styleProfile
+  ['styleprofile', 'styleProfile'],
+  ['style profile', 'styleProfile'],
+  // supplierCatalogue
+  ['suppliercatalogue', 'supplierCatalogue'],
+  ['supplier catalogue', 'supplierCatalogue'],
+  ['supplier catalog', 'supplierCatalogue'],
+  ['catalogue', 'supplierCatalogue'],
+  ['catalog', 'supplierCatalogue'],
+  // active
+  ['active', 'active'],
+  // lastPriceUpdate
+  ['lastpriceupdate', 'lastPriceUpdate'],
+  ['last price update', 'lastPriceUpdate'],
+]);
 
 const AVAILABILITY_STATUS_MAP = new Map<string, AvailabilityStatus>([
   ['email for quote', AvailabilityStatus.EMAIL_FOR_QUOTE],
@@ -223,6 +291,7 @@ export function normalizeCatalogItemImportRow(
     productNameKey: normalizeProductNameKey(productName),
     itemCode: normalizeOptionalString(row.itemCode),
     subcategory: normalizeOptionalString(row.subcategory),
+    material: normalizeOptionalString(row.material),
     supplierCost: parseCurrencyValue(row.supplierCost, 'supplierCost'),
     ourPrice: parseCurrencyValue(row.ourPrice, 'ourPrice'),
     markUp: parsePercentValue(row.markUp, 'markUp'),
@@ -258,6 +327,10 @@ export function normalizeCatalogItemUpdateInput(
 
   if (payload.subcategory !== undefined) {
     data.subcategory = normalizeOptionalString(payload.subcategory);
+  }
+
+  if (payload.material !== undefined) {
+    data.material = normalizeOptionalString(payload.material);
   }
 
   if (payload.supplierCost !== undefined) {

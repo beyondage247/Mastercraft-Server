@@ -12,6 +12,7 @@ export const INVENTORY_IMPORT_COLUMNS = [
   'unitMeasure',
   'supplier',
   'availabilityStatus',
+  'ourPrice',
   'minReserve',
   'inStock',
   'notes',
@@ -38,6 +39,7 @@ export type NormalizedInventoryInput = {
   unitMeasure: string | null;
   supplier: string;
   availabilityStatuses: AvailabilityStatus[];
+  ourPrice: number | null;
   minReserve: number | null;
   inStock: number | null;
   notes: string | null;
@@ -68,11 +70,17 @@ const INVENTORY_HEADER_ALIASES = new Map<string, InventoryImportColumn>([
   ['dimensions', 'sizeDimension'],
   ['unit of measure', 'unitMeasure'],
   ['unit measure', 'unitMeasure'],
+  ['unit of measurement', 'unitMeasure'],
   ['supplier', 'supplier'],
   ['availability status', 'availabilityStatus'],
   ['availability', 'availabilityStatus'],
+  ['our price', 'ourPrice'],
+  ['ourprice', 'ourPrice'],
+  ['price', 'ourPrice'],
   ['min reserve', 'minReserve'],
   ['in stock', 'inStock'],
+  ['note / variants', 'notes'],
+  ['note/variants', 'notes'],
   ['notes / variants', 'notes'],
   ['notes/variants', 'notes'],
   ['notes', 'notes'],
@@ -249,6 +257,8 @@ export function parseNonNegativeIntegerValue(
 ): number | null {
   if (value === null || value === undefined) return null;
 
+  if (typeof value === 'boolean') return value ? 1 : 0;
+
   if (typeof value === 'number') {
     if (!Number.isInteger(value) || value < 0) {
       bad(`${fieldName} must be a non-negative integer`);
@@ -259,11 +269,38 @@ export function parseNonNegativeIntegerValue(
   const normalized = normalizeOptionalString(value);
   if (!normalized) return null;
 
+  const lower = normalized.toLowerCase();
+  if (lower === 'yes') return 1;
+  if (lower === 'no') return 0;
+
   if (!/^\d+$/.test(normalized)) {
     bad(`${fieldName} must be a non-negative integer`);
   }
 
   return Number(normalized);
+}
+
+export function parseDecimalValue(value: unknown, fieldName: string): number | null {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === 'number') {
+    if (!isFinite(value) || value < 0) {
+      bad(`${fieldName} must be a non-negative number`);
+    }
+    return value;
+  }
+
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) return null;
+
+  const stripped = normalized.replace(/^\$/, '').replace(/,/g, '').trim();
+  const parsed = parseFloat(stripped);
+
+  if (isNaN(parsed) || parsed < 0) {
+    bad(`${fieldName} must be a non-negative number`);
+  }
+
+  return parsed;
 }
 
 export function parseExcelDateValue(
@@ -317,6 +354,7 @@ export function normalizeInventoryImportRow(
     unitMeasure: normalizeOptionalString(row.unitMeasure),
     supplier,
     availabilityStatuses,
+    ourPrice: parseDecimalValue(row.ourPrice, 'ourPrice'),
     minReserve: parseNonNegativeIntegerValue(row.minReserve, 'minReserve'),
     inStock: parseNonNegativeIntegerValue(row.inStock, 'inStock'),
     notes: normalizeOptionalString(row.notes),
@@ -375,6 +413,10 @@ export function normalizeInventoryMutationInput(
 
     if (!availabilityStatuses?.length) bad('availabilityStatus is required');
     data.availabilityStatuses = availabilityStatuses;
+  }
+
+  if (payload.ourPrice !== undefined) {
+    data.ourPrice = parseDecimalValue(payload.ourPrice, 'ourPrice');
   }
 
   if (payload.minReserve !== undefined) {

@@ -11,11 +11,13 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -29,6 +31,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Auth } from '../auth/decorators/auth.decorator';
 import {
   CatalogItemResponse,
+  CreateCatalogItemInput,
+  CreateCatalogItemResponse,
   ImportCatalogItemsBody,
   ImportCatalogItemsResponse,
   UpdateCatalogItemInput,
@@ -82,6 +86,23 @@ export class ServicesController {
   @Get(':id')
   async getCatalogItem(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.services.getCatalogItem(id);
+  }
+
+  @ApiOperation({ summary: 'Create one catalog item' })
+  @ApiBody({ type: CreateCatalogItemInput })
+  @ApiCreatedResponse({
+    description: 'Creates a new catalog item.',
+    type: CreateCatalogItemResponse,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'The request body is invalid or a unique field conflicts with an existing catalog item.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only staff users can manage catalog items.' })
+  @Post()
+  async createCatalogItem(@Body() dto: CreateCatalogItemInput) {
+    return this.services.createCatalogItem(dto);
   }
 
   @ApiOperation({ summary: 'Import catalog items from an Excel workbook' })
