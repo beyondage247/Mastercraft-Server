@@ -26,7 +26,7 @@ export class PrismaService
     const pool = new Pool({
       connectionString: databaseUrl,
       ssl: {
-        rejectUnauthorized: true,
+        rejectUnauthorized: false,
       },
     });
 
