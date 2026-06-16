@@ -6,9 +6,154 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
+
+export class CreateCatalogItemInput {
+  @ApiProperty({
+    example: 'C-4075-50 3-1/2" x 50" Box Newel-Landing (Red Oak)',
+    description: 'Display name for the catalog item.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  productName: string;
+
+  @ApiPropertyOptional({
+    example: 'C-4075-50',
+    description: 'Supplier or internal item code.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  itemCode?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Box Newel',
+    description: 'Subcategory or series label.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  subcategory?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Red Oak',
+    description: 'Species or material descriptor.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  material?: string | null;
+
+  @ApiPropertyOptional({
+    example: '55.00',
+    description: 'Supplier cost stored as a decimal string. May include a leading $ sign.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  supplierCost?: string | null;
+
+  @ApiPropertyOptional({
+    example: '79.565',
+    description: 'Customer price stored as a decimal string. May include a leading $ sign.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  ourPrice?: string | null;
+
+  @ApiPropertyOptional({
+    example: '40',
+    description: 'Markup percentage stored as a decimal string.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  markUp?: string | null;
+
+  @ApiProperty({
+    enum: AvailabilityStatus,
+    enumName: 'AvailabilityStatus',
+    isArray: true,
+    example: [AvailabilityStatus.SPECIAL_ORDER],
+    description: 'Availability values applied to the item.',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(AvailabilityStatus, { each: true })
+  availabilityStatus: AvailabilityStatus[];
+
+  @ApiProperty({
+    example: 'Stair parts (Coffman)',
+    description: 'Top-level category for the catalog item.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @ApiProperty({
+    example: 'Coffman Stairs',
+    description: 'Supplier name.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  supplier: string;
+
+  @ApiPropertyOptional({
+    example: '5" x 50"',
+    description: 'Size or dimension descriptor.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  sizeDimension?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Each',
+    description: 'Unit of measure.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  unitMeasure?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Traditional',
+    description: 'Style or profile descriptor.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  styleProfile?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Coffman 2024',
+    description: 'Supplier catalogue reference.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  supplierCatalogue?: string | null;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether the catalog item is active.',
+  })
+  @IsBoolean()
+  active: boolean;
+
+  @ApiPropertyOptional({
+    example: '2026-06-01T00:00:00.000Z',
+    description: 'Timestamp of the last price update.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsDateString()
+  lastPriceUpdate?: string | null;
+}
 
 export class UpdateCatalogItemInput {
   @ApiPropertyOptional({
@@ -38,6 +183,15 @@ export class UpdateCatalogItemInput {
   @IsOptional()
   @IsString()
   subcategory?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Red Oak',
+    description: 'Species or material descriptor.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  material?: string | null;
 
   @ApiPropertyOptional({
     example: '219',
@@ -180,6 +334,13 @@ export class CatalogItemResponse {
   subcategory: string | null;
 
   @ApiPropertyOptional({
+    example: 'Red Oak',
+    description: 'Species or material descriptor.',
+    nullable: true,
+  })
+  material: string | null;
+
+  @ApiPropertyOptional({
     example: '219',
     description: 'Supplier cost as a decimal string.',
     nullable: true,
@@ -285,6 +446,20 @@ export class UpdateCatalogItemResponse {
   @ApiProperty({
     type: () => CatalogItemResponse,
     description: 'The updated catalog item.',
+  })
+  item: CatalogItemResponse;
+}
+
+export class CreateCatalogItemResponse {
+  @ApiProperty({
+    example: 'Catalog item created successfully',
+    description: 'Confirmation message returned after creating the catalog item.',
+  })
+  message: string;
+
+  @ApiProperty({
+    type: () => CatalogItemResponse,
+    description: 'The newly created catalog item.',
   })
   item: CatalogItemResponse;
 }

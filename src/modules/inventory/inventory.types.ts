@@ -150,6 +150,15 @@ export class CreateInventoryItemInput {
   availabilityStatus: AvailabilityStatus[];
 
   @ApiPropertyOptional({
+    example: '1.405',
+    description: 'Our selling price. May include a leading $ sign.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  ourPrice?: string | null;
+
+  @ApiPropertyOptional({
     example: '10',
     description: 'Minimum stock reserve stored as a non-negative integer string.',
     nullable: true,
@@ -281,6 +290,15 @@ export class UpdateInventoryItemInput {
   availabilityStatus?: AvailabilityStatus[] | null;
 
   @ApiPropertyOptional({
+    example: '1.405',
+    description: 'Our selling price. May include a leading $ sign.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  ourPrice?: string | null;
+
+  @ApiPropertyOptional({
     example: '10',
     description: 'Minimum stock reserve stored as a non-negative integer string.',
     nullable: true,
@@ -394,6 +412,13 @@ export class InventoryItemResponse {
     description: 'Availability values applied to the item.',
   })
   availabilityStatus: AvailabilityStatus[];
+
+  @ApiPropertyOptional({
+    example: 1.405,
+    description: 'Our selling price.',
+    nullable: true,
+  })
+  ourPrice: number | null;
 
   @ApiPropertyOptional({
     example: 10,
