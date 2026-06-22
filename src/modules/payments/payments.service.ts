@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   PaymentMethod,
   Prisma,
@@ -6,11 +6,13 @@ import {
   QuoteStatus,
   Role,
 } from '@prisma/client';
+import Stripe = require('stripe');
 import { IAuthUser } from 'src/modules/auth/auth.types';
 import { PrismaService } from 'src/services/prisma/prisma.service';
+import { StripeService } from 'src/services/stripe/stripe.service';
 import { connectId } from 'src/services/prisma/prisma.utils';
 import { bad } from 'src/utils/error.utils';
-import { CreatePaymentInput } from './payment.types';
+import { ConfirmCheckoutInput, CreateCheckoutInput } from './payment.types';
 
 const paymentSelect = {
   id: true,
@@ -76,16 +78,14 @@ type ClientPaymentRecord = Prisma.PaymentGetPayload<{
   select: typeof clientPaymentSelect;
 }>;
 
-const paymentReferencePrefix: Record<PaymentMethod, string> = {
-  [PaymentMethod.ACH]: 'ACH-',
-  [PaymentMethod.WIRE]: 'WIRE-',
-  [PaymentMethod.CREDIT_CARD]: 'CC-',
-  [PaymentMethod.CHECK]: 'CHK-',
-};
-
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PaymentsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stripeService: StripeService,
+  ) {}
 
   async getPaymentList(user: IAuthUser) {
     if (!user.isAdmin) {
@@ -170,89 +170,285 @@ export class PaymentsService {
     };
   }
 
-  async createPayment(dto: CreatePaymentInput, user: IAuthUser) {
-    const invoice = await this.getInvoiceForStaff(dto.invoiceId, user);
+  async createCheckoutSession(dto: CreateCheckoutInput, user: IAuthUser) {
+    const invoice = await this.getInvoiceForCheckout(dto.invoiceId, user);
 
-    const createdAt = this.toDate(dto.createdAt, 'createdAt');
-    const amount = new Prisma.Decimal(dto.amount);
+    const invoiceAggregate = await this.prisma.payment.aggregate({
+      where: { invoiceId: dto.invoiceId },
+      _sum: { amount: true },
+    });
+    const amountPaid =
+      invoiceAggregate._sum.amount ?? new Prisma.Decimal(0);
+    const remainingBalance = invoice.total.sub(amountPaid);
 
-    if (amount.lessThanOrEqualTo(0)) {
-      bad('amount must be greater than 0');
+    if (remainingBalance.lessThanOrEqualTo(0)) {
+      bad('This invoice has already been fully paid');
     }
 
-    const reference =
-      dto.reference?.trim() ||
-      this.generateReference(dto.method, createdAt);
+    const amount = dto.amount
+      ? new Prisma.Decimal(dto.amount)
+      : remainingBalance;
 
-    this.validateReference(reference, dto.method);
+    if (amount.lessThanOrEqualTo(0)) {
+      bad('Amount must be greater than 0');
+    }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const existingReference = await tx.payment.findFirst({
-        where: { reference },
-        select: {
-          id: true,
+    if (amount.greaterThan(remainingBalance)) {
+      bad('Payment amount exceeds the remaining invoice balance');
+    }
+
+    const amountInCents = Math.round(amount.toNumber() * 100);
+
+    const session = await this.stripeService.stripe.checkout.sessions.create({
+      mode: 'payment',
+      customer_email: invoice.project.client.email,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Invoice ${invoice.invoiceId}`,
+              description: `Project: ${invoice.project.name}`,
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
         },
-      });
-
-      if (existingReference) {
-        bad('reference already exists');
-      }
-
-      const invoiceAggregate = await tx.payment.aggregate({
-        where: { invoiceId: dto.invoiceId },
-        _sum: {
-          amount: true,
-        },
-      });
-
-      const invoiceAmountPaid =
-        invoiceAggregate._sum.amount ?? new Prisma.Decimal(0);
-      const nextInvoiceAmountPaid = invoiceAmountPaid.add(amount);
-
-      if (nextInvoiceAmountPaid.greaterThan(invoice.total)) {
-        bad('Payment amount exceeds the remaining invoice balance');
-      }
-
-      const payment = await tx.payment.create({
-        data: {
-          invoice: connectId(dto.invoiceId),
-          project: connectId(invoice.projectId),
-          createdAt,
-          method: dto.method,
-          reference,
-          amount,
-        },
-        select: paymentSelect,
-      });
-
-      const billing = await this.getProjectBillingTotals(tx, invoice.projectId);
-      const paymentStatus = this.resolvePaymentStatus(
-        billing.amountPaid,
-        billing.totalInvoiced,
-      );
-
-      await tx.project.update({
-        where: { id: invoice.projectId },
-        data: {
-          paymentStatus,
-        },
-      });
-
-      return {
-        payment,
-        paymentStatus,
-        amountPaid: billing.amountPaid,
-        amountDue: this.getAmountDue(billing.amountPaid, billing.totalInvoiced),
-      };
+      ],
+      metadata: {
+        invoiceId: dto.invoiceId,
+        projectId: invoice.projectId,
+      },
+      success_url: process.env.STRIPE_SUCCESS_URL!,
+      cancel_url: process.env.STRIPE_CANCEL_URL!,
     });
 
-    return {
-      message: 'Payment recorded successfully',
-      payment: this.serializePayment(result.payment),
-      paymentStatus: result.paymentStatus,
-      amountPaid: result.amountPaid.toString(),
-      amountDue: result.amountDue.toString(),
-    };
+    return { url: session.url };
+  }
+
+  async confirmCheckoutSession(dto: ConfirmCheckoutInput, user: IAuthUser) {
+    const session =
+      await this.stripeService.stripe.checkout.sessions.retrieve(
+        dto.sessionId,
+      );
+
+    if (session.payment_status !== 'paid') {
+      return { confirmed: false, message: 'Payment has not been completed.' };
+    }
+
+    const invoiceId = session.metadata?.invoiceId;
+    const projectId = session.metadata?.projectId;
+
+    if (!invoiceId || !projectId) {
+      return { confirmed: false, message: 'Session metadata is missing.' };
+    }
+
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      select: {
+        id: true,
+        project: {
+          select: {
+            clientId: true,
+            client: { select: { accountPartnerId: true } },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return { confirmed: false, message: 'Invoice not found.' };
+    }
+
+    if (
+      user.role === Role.CLIENT &&
+      invoice.project.clientId !== user.id
+    ) {
+      bad('You can only confirm payments for your own invoices', 403);
+    }
+
+    if (
+      user.role === Role.STAFF &&
+      !user.isAdmin &&
+      invoice.project.client.accountPartnerId !== user.id
+    ) {
+      bad('You can only confirm payments for your clients', 403);
+    }
+
+    const paymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id;
+
+    const reference = `STRIPE-${paymentIntentId ?? session.id}`;
+
+    const existing = await this.prisma.payment.findFirst({
+      where: { reference },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return { confirmed: true, message: 'Payment already recorded.' };
+    }
+
+    if (!session.amount_total) {
+      return { confirmed: false, message: 'Session has no amount.' };
+    }
+
+    const amount = new Prisma.Decimal(session.amount_total).div(100);
+    await this.recordStripePayment(invoiceId, projectId, amount, reference);
+
+    return { confirmed: true, message: 'Payment recorded successfully.' };
+  }
+
+  async handleWebhook(rawBody: Buffer, signature: string) {
+    let event: Stripe.Event;
+
+    try {
+      event = this.stripeService.constructEvent(rawBody, signature);
+    } catch (err) {
+      this.logger.error('Stripe webhook signature verification failed', err);
+      bad('Invalid webhook signature', 400);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      if (session.payment_status !== 'paid') {
+        return { received: true };
+      }
+
+      const invoiceId = session.metadata?.invoiceId;
+      const projectId = session.metadata?.projectId;
+
+      if (!invoiceId || !projectId) {
+        this.logger.warn(
+          `Stripe webhook: checkout session ${session.id} missing metadata, skipping`,
+        );
+        return { received: true };
+      }
+
+      const paymentIntentId =
+        typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent?.id;
+
+      const reference = `STRIPE-${paymentIntentId ?? session.id}`;
+
+      const existing = await this.prisma.payment.findFirst({
+        where: { reference },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return { received: true };
+      }
+
+      if (!session.amount_total) {
+        this.logger.warn(
+          `Stripe webhook: checkout session ${session.id} has no amount_total, skipping`,
+        );
+        return { received: true };
+      }
+
+      const amount = new Prisma.Decimal(session.amount_total).div(100);
+
+      await this.recordStripePayment(invoiceId, projectId, amount, reference);
+    }
+
+    return { received: true };
+  }
+
+  private async recordStripePayment(
+    invoiceId: string,
+    projectId: string,
+    amount: Prisma.Decimal,
+    reference: string,
+  ) {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.payment.create({
+          data: {
+            invoice: connectId(invoiceId),
+            project: connectId(projectId),
+            method: PaymentMethod.STRIPE,
+            reference,
+            amount,
+          },
+        });
+
+        const billing = await this.getProjectBillingTotals(tx, projectId);
+        const paymentStatus = this.resolvePaymentStatus(
+          billing.amountPaid,
+          billing.totalInvoiced,
+        );
+
+        await tx.project.update({
+          where: { id: projectId },
+          data: { paymentStatus },
+        });
+      });
+
+      this.logger.log(
+        `Stripe payment recorded: ${reference} — ${amount} for invoice ${invoiceId}`,
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        this.logger.log(
+          `Stripe payment already recorded: ${reference} — skipping duplicate`,
+        );
+        return;
+      }
+      throw error;
+    }
+  }
+
+  private async getInvoiceForCheckout(invoiceId: string, user: IAuthUser) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      select: {
+        id: true,
+        invoiceId: true,
+        projectId: true,
+        status: true,
+        total: true,
+        project: {
+          select: {
+            name: true,
+            clientId: true,
+            client: {
+              select: {
+                email: true,
+                accountPartnerId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) bad('Invoice not found', 404);
+
+    if (user.role === Role.CLIENT && invoice.project.clientId !== user.id) {
+      bad('You can only pay for your own invoices', 403);
+    }
+
+    if (
+      user.role === Role.STAFF &&
+      !user.isAdmin &&
+      invoice.project.client.accountPartnerId !== user.id
+    ) {
+      bad(
+        'You can only create payment links for invoices assigned to your clients',
+        403,
+      );
+    }
+
+    if (invoice.status !== QuoteStatus.APPROVED) {
+      bad('Payments can only be made for approved invoices');
+    }
+
+    return invoice;
   }
 
   private async getProjectForUser(projectId: string, user: IAuthUser) {
@@ -319,41 +515,10 @@ export class PaymentsService {
     return client;
   }
 
-  private async getInvoiceForStaff(invoiceId: string, user: IAuthUser) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      select: {
-        id: true,
-        projectId: true,
-        status: true,
-        total: true,
-        project: {
-          select: {
-            client: {
-              select: {
-                accountPartnerId: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!invoice) bad('Invoice not found', 404);
-
-    if (!user.isAdmin && invoice.project.client.accountPartnerId !== user.id) {
-      bad('You can only record payments for invoices assigned to your clients', 403);
-    }
-
-    if (invoice.status !== QuoteStatus.APPROVED) {
-      bad('Payments can only be recorded for approved invoices');
-    }
-
-    return invoice;
-  }
-
   private async getProjectBillingTotals(
-    prisma: Pick<PrismaService, 'invoice' | 'payment'> | Prisma.TransactionClient,
+    prisma:
+      | Pick<PrismaService, 'invoice' | 'payment'>
+      | Prisma.TransactionClient,
     projectId: string,
   ) {
     const [invoiceAggregate, paymentAggregate] = await Promise.all([
@@ -409,46 +574,6 @@ export class PaymentsService {
     }
 
     return totalInvoiced.sub(amountPaid);
-  }
-
-  private validateReference(reference: string, method: PaymentMethod) {
-    const prefix = paymentReferencePrefix[method];
-
-    if (!reference.startsWith(prefix)) {
-      bad(`reference must start with ${prefix} for ${method} payments`);
-    }
-
-    if (reference.length <= prefix.length) {
-      bad('reference must include a value after the payment type prefix');
-    }
-  }
-
-  private generateReference(method: PaymentMethod, createdAt: Date) {
-    return `${paymentReferencePrefix[method]}${this.formatReferenceTimestamp(createdAt)}`;
-  }
-
-  private formatReferenceTimestamp(date: Date) {
-    const parts = [
-      date.getUTCFullYear().toString().padStart(4, '0'),
-      (date.getUTCMonth() + 1).toString().padStart(2, '0'),
-      date.getUTCDate().toString().padStart(2, '0'),
-      date.getUTCHours().toString().padStart(2, '0'),
-      date.getUTCMinutes().toString().padStart(2, '0'),
-      date.getUTCSeconds().toString().padStart(2, '0'),
-      date.getUTCMilliseconds().toString().padStart(3, '0'),
-    ];
-
-    return parts.join('');
-  }
-
-  private toDate(value: string, fieldName: string) {
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-      bad(`Invalid ${fieldName} value`);
-    }
-
-    return parsed;
   }
 
   private serializePayment(payment: PaymentRecord) {

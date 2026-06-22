@@ -80,6 +80,7 @@ enum PaymentMethod {
   WIRE
   CREDIT_CARD
   CHECK
+  STRIPE
 }
 
 enum QuotePaymentScheduleType {
