@@ -15,6 +15,16 @@ export class UpdateCommissionInput {
   percentageCommission?: number;
 
   @ApiPropertyOptional({
+    example: 150,
+    description:
+      'Amount paid to staff for this commission. Must be >= 0.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  commissionAmountPaid?: number;
+
+  @ApiPropertyOptional({
     enum: CommissionStatus,
     enumName: 'CommissionStatus',
     example: CommissionStatus.PAID,
@@ -152,6 +162,35 @@ export class CommissionResponse {
     description: 'Computed commission amount as a decimal string.',
   })
   amount: string;
+
+  @ApiPropertyOptional({
+    example: '7ecb34de-c8dc-4fc7-8532-a65153a36429',
+    description:
+      'Invoice ID linked through the quote. Null if no invoice has been generated yet.',
+    nullable: true,
+  })
+  invoiceId: string | null;
+
+  @ApiProperty({
+    example: '1500',
+    description:
+      'Total amount paid by the client on the invoice as a decimal string.',
+  })
+  amountPaid: string;
+
+  @ApiProperty({
+    example: '150',
+    description:
+      'Amount paid to staff for this commission as a decimal string.',
+  })
+  commissionAmountPaid: string;
+
+  @ApiProperty({
+    example: '165',
+    description:
+      'Remaining commission balance (amount - commissionAmountPaid) as a decimal string.',
+  })
+  commissionAmountBalance: string;
 
   @ApiProperty({
     enum: CommissionStatus,

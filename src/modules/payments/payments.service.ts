@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  CommissionStatus,
   PaymentMethod,
   Prisma,
   ProjectPaymentStatus,
@@ -387,6 +388,8 @@ export class PaymentsService {
           where: { id: projectId },
           data: { paymentStatus },
         });
+
+        await this.updateCommissionStatusAfterPayment(tx, invoiceId);
       });
 
       this.logger.log(
@@ -401,6 +404,37 @@ export class PaymentsService {
       }
       throw error;
     }
+  }
+
+  private async updateCommissionStatusAfterPayment(
+    tx: Prisma.TransactionClient,
+    invoiceId: string,
+  ) {
+    const invoice = await tx.invoice.findUnique({
+      where: { id: invoiceId },
+      select: { quoteId: true },
+    });
+
+    if (!invoice) return;
+
+    const commission = await tx.commission.findUnique({
+      where: { quoteId: invoice.quoteId },
+      select: { id: true, status: true },
+    });
+
+    if (!commission) return;
+
+    if (
+      commission.status === CommissionStatus.PAID ||
+      commission.status === CommissionStatus.QUOTED_COMMISSION
+    ) {
+      return;
+    }
+
+    await tx.commission.update({
+      where: { id: commission.id },
+      data: { status: CommissionStatus.PARTIALLY_PAID },
+    });
   }
 
   private async getInvoiceForCheckout(invoiceId: string, user: IAuthUser) {

@@ -937,7 +937,7 @@ export class QuotesService {
           taxAmount: quote.taxAmount,
           percentageCommission:
             quote.commission?.percentageCommission ?? new Prisma.Decimal(0),
-          status: CommissionStatus.APPROVED_COMMISSION,
+          status: CommissionStatus.INVOICE_COMMISSION,
         });
       } else {
         await tx.project.update({

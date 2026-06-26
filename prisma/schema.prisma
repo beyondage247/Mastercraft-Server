@@ -31,19 +31,19 @@ model User {
   createdAt                 DateTime  @default(now())
 
   // Client Specific Fields
-  phone             String?
-  company           String?
-  additionalContact String?
-  additionalEmail   String?
-  clientCredit      ClientCredit?
-  projects          Project[]
-  uploads           Upload[]
-  projectComments   ProjectComment[]
-  reports           Report[]
-  commissions          Commission[]               @relation("StaffCommissions")
-  clientCommissions    Commission[]               @relation("ClientCommissions")
-  documentCategories   ProjectDocumentCategory[]  @relation("DocumentCategoryCreator")
-  projectDocuments     ProjectDocument[]           @relation("DocumentUploader")
+  phone              String?
+  company            String?
+  additionalContact  String?
+  additionalEmail    String?
+  clientCredit       ClientCredit?
+  projects           Project[]
+  uploads            Upload[]
+  projectComments    ProjectComment[]
+  reports            Report[]
+  commissions        Commission[]              @relation("StaffCommissions")
+  clientCommissions  Commission[]              @relation("ClientCommissions")
+  documentCategories ProjectDocumentCategory[] @relation("DocumentCategoryCreator")
+  projectDocuments   ProjectDocument[]         @relation("DocumentUploader")
 
   @@index([accountPartnerId])
 }
@@ -117,6 +117,8 @@ enum ProjectPaymentStatus {
 enum CommissionStatus {
   QUOTED_COMMISSION
   APPROVED_COMMISSION
+  INVOICE_COMMISSION
+  PARTIALLY_PAID
   PAID
 }
 
@@ -259,6 +261,7 @@ model Commission {
   total                Decimal
   percentageCommission Decimal          @default(0)
   amount               Decimal          @default(0)
+  commissionAmountPaid Decimal          @default(0)
   status               CommissionStatus @default(QUOTED_COMMISSION)
   paidAt               DateTime?
   createdAt            DateTime         @default(now())

@@ -12,6 +12,7 @@ const commissionSelect = {
   total: true,
   percentageCommission: true,
   amount: true,
+  commissionAmountPaid: true,
   status: true,
   paidAt: true,
   createdAt: true,
@@ -42,6 +43,18 @@ const commissionSelect = {
         select: {
           id: true,
           name: true,
+        },
+      },
+      invoices: {
+        orderBy: { createdAt: 'asc' as const },
+        take: 1,
+        select: {
+          id: true,
+          payments: {
+            select: {
+              amount: true,
+            },
+          },
         },
       },
     },
@@ -127,6 +140,8 @@ export class CommissionsService {
       select: {
         id: true,
         total: true,
+        amount: true,
+        commissionAmountPaid: true,
         status: true,
       },
     });
@@ -148,13 +163,27 @@ export class CommissionsService {
       );
     }
 
+    if (dto.commissionAmountPaid !== undefined) {
+      const paid = new Prisma.Decimal(dto.commissionAmountPaid);
+      const currentAmount =
+        data.amount instanceof Prisma.Decimal
+          ? data.amount
+          : existingCommission.amount;
+
+      if (paid.greaterThan(currentAmount)) {
+        bad('commissionAmountPaid cannot exceed commission amount');
+      }
+
+      data.commissionAmountPaid = paid;
+    }
+
     if (dto.status !== undefined) {
       if (dto.status !== CommissionStatus.PAID) {
         bad('Only PAID can be set manually');
       }
 
       if (existingCommission.status === CommissionStatus.QUOTED_COMMISSION) {
-        bad('Only approved commissions can be marked as paid');
+        bad('Only invoiced or partially paid commissions can be marked as paid');
       }
 
       if (existingCommission.status === CommissionStatus.PAID) {
@@ -203,11 +232,26 @@ export class CommissionsService {
   }
 
   private serializeCommission(commission: CommissionRecord) {
+    const invoice = commission.quote.invoices[0] ?? null;
+    const amountPaid = invoice
+      ? invoice.payments.reduce(
+          (sum, p) => sum.add(p.amount),
+          new Prisma.Decimal(0),
+        )
+      : new Prisma.Decimal(0);
+    const commissionAmountBalance = commission.amount.sub(
+      commission.commissionAmountPaid,
+    );
+
     return {
       id: commission.id,
       total: commission.total.toString(),
       percentageCommission: commission.percentageCommission.toString(),
       amount: commission.amount.toString(),
+      invoiceId: invoice?.id ?? null,
+      amountPaid: amountPaid.toString(),
+      commissionAmountPaid: commission.commissionAmountPaid.toString(),
+      commissionAmountBalance: commissionAmountBalance.toString(),
       status: commission.status,
       paidAt: commission.paidAt?.toISOString() ?? null,
       createdAt: commission.createdAt.toISOString(),
