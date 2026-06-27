@@ -36,6 +36,7 @@ export class AuthService {
       where: { email },
     });
     if (!user) bad('Invalid credentials');
+    if (!user.isActive) bad('Your account has been deactivated', 403);
     const isMatch = await verify(user.password, password);
     if (!isMatch) bad('Invalid credentials');
 

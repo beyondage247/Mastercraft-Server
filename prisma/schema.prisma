@@ -25,6 +25,7 @@ model User {
   passwordResetOtpExpiresAt DateTime?
   role                      Role      @default(CLIENT)
   isAdmin                   Boolean   @default(false)
+  isActive                  Boolean   @default(true)
   accountPartner            User?     @relation("StaffClients", fields: [accountPartnerId], references: [id], onDelete: SetNull)
   accountPartnerId          String?   @db.Uuid
   managedClients            User[]    @relation("StaffClients")
