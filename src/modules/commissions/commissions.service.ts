@@ -13,6 +13,7 @@ const commissionSelect = {
   percentageCommission: true,
   amount: true,
   commissionAmountPaid: true,
+  invoiceCommission: true,
   status: true,
   paidAt: true,
   createdAt: true,
@@ -177,6 +178,10 @@ export class CommissionsService {
       data.commissionAmountPaid = paid;
     }
 
+    if (dto.invoiceCommission !== undefined) {
+      data.invoiceCommission = new Prisma.Decimal(dto.invoiceCommission);
+    }
+
     if (dto.status !== undefined) {
       if (dto.status !== CommissionStatus.PAID) {
         bad('Only PAID can be set manually');
@@ -251,6 +256,7 @@ export class CommissionsService {
       invoiceId: invoice?.id ?? null,
       amountPaid: amountPaid.toString(),
       commissionAmountPaid: commission.commissionAmountPaid.toString(),
+      invoiceCommission: (commission.invoiceCommission ?? new Prisma.Decimal(0)).toString(),
       commissionAmountBalance: commissionAmountBalance.toString(),
       status: commission.status,
       paidAt: commission.paidAt?.toISOString() ?? null,

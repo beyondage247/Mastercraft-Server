@@ -263,6 +263,7 @@ model Commission {
   percentageCommission Decimal          @default(0)
   amount               Decimal          @default(0)
   commissionAmountPaid Decimal          @default(0)
+  invoiceCommission    Decimal          @default(0)
   status               CommissionStatus @default(QUOTED_COMMISSION)
   paidAt               DateTime?
   createdAt            DateTime         @default(now())
