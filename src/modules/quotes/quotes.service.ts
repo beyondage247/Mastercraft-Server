@@ -552,6 +552,10 @@ export class QuotesService {
       );
     }
 
+    const autoApprove = dto.autoApprove === true;
+    let createdInvoiceId: string | null = null;
+    let createdInvoiceDbId: string | null = null;
+
     const quote = await this.prisma.$transaction(async (tx) => {
       const quoteId = await this.idGenerator.nextId(tx);
       const createdQuote = await tx.quote.create({
@@ -559,7 +563,7 @@ export class QuotesService {
           quoteId,
           projectId: dto.projectId,
           name: dto.name.trim(),
-          status: QuoteStatus.PENDING,
+          status: autoApprove ? QuoteStatus.APPROVED : QuoteStatus.PENDING,
           message,
           clientComment: null,
           dateIssued,
@@ -607,9 +611,60 @@ export class QuotesService {
           total: this.getCommissionBaseTotal(quoteTotal, quoteTaxAmount),
           percentageCommission: new Prisma.Decimal(0),
           amount: new Prisma.Decimal(0),
-          status: CommissionStatus.QUOTED_COMMISSION,
+          status: autoApprove
+            ? CommissionStatus.INVOICE_COMMISSION
+            : CommissionStatus.QUOTED_COMMISSION,
         },
       });
+
+      if (autoApprove) {
+        const invoiceId = await this.invoiceIdGenerator.nextId(tx);
+        const createdInvoice = await tx.invoice.create({
+          data: {
+            invoiceId,
+            quoteId: createdQuote.id,
+            projectId: dto.projectId,
+            name: dto.name.trim(),
+            status: QuoteStatus.APPROVED,
+            message,
+            clientComment: null,
+            dateIssued,
+            validUntil,
+            subtotal: new Prisma.Decimal(dto.subtotal),
+            tax: new Prisma.Decimal(dto.tax),
+            taxAmount: quoteTaxAmount,
+            discount,
+            shippingFee,
+            total: quoteTotal,
+            lineItems: {
+              create: lineItems.map((item) => ({
+                productName: item.productName,
+                ourPrice: item.ourPrice,
+                quantity: item.quantity,
+              })),
+            },
+          },
+        });
+        createdInvoiceId = createdInvoice.invoiceId;
+        createdInvoiceDbId = createdInvoice.id;
+
+        const billing = await this.getProjectBillingTotals(tx, dto.projectId);
+        await tx.project.update({
+          where: { id: dto.projectId },
+          data: {
+            status: ProjectStatus.IN_PRODUCTION,
+            paymentStatus: this.resolveProjectPaymentStatus(
+              billing.amountPaid,
+              billing.totalInvoiced,
+            ),
+          },
+        });
+
+        return tx.quote.findUniqueOrThrow({
+          where: { id: createdQuote.id },
+          select: quoteSelect,
+        });
+      }
 
       await tx.project.update({
         where: { id: dto.projectId },
@@ -621,17 +676,69 @@ export class QuotesService {
       return createdQuote;
     });
 
-    void this.mail
-      .sendQuoteCreatedMail(this.buildQuoteCreatedMailContext(project, quote))
-      .catch((error: unknown) => {
-        this.logger.error(
-          `Failed to send quote creation notification for quote ${quote.id}`,
-          error,
-        );
+    if (autoApprove && createdInvoiceId && createdInvoiceDbId) {
+      const approvedQuote = await this.prisma.quote.findUnique({
+        where: { id: quote.id },
+        select: quoteApprovalSelect,
       });
 
+      if (approvedQuote) {
+        const invoiceMailContext = this.buildInvoiceCreatedMailContext(
+          approvedQuote,
+          createdInvoiceDbId,
+          createdInvoiceId,
+          null,
+        );
+        const notificationRecipients = this.getUniqueRecipients([
+          {
+            id: project.client.id,
+            name: project.client.name,
+            email: project.client.email,
+          },
+          project.client.accountPartner
+            ? {
+                id: project.client.accountPartner.id,
+                name: project.client.accountPartner.name,
+                email: project.client.accountPartner.email,
+              }
+            : null,
+          ...(await this.getAdminRecipients([
+            project.client.accountPartnerId,
+          ])),
+        ]);
+
+        if (notificationRecipients.length) {
+          void Promise.all(
+            notificationRecipients.map((recipient) =>
+              this.mail.sendInvoiceCreatedMail({
+                ...invoiceMailContext,
+                recipientName: recipient.name,
+                recipientEmail: recipient.email,
+              }),
+            ),
+          ).catch((error: unknown) => {
+            this.logger.error(
+              `Failed to send invoice creation notification for quote ${quote.id}`,
+              error,
+            );
+          });
+        }
+      }
+    } else {
+      void this.mail
+        .sendQuoteCreatedMail(this.buildQuoteCreatedMailContext(project, quote))
+        .catch((error: unknown) => {
+          this.logger.error(
+            `Failed to send quote creation notification for quote ${quote.id}`,
+            error,
+          );
+        });
+    }
+
     return {
-      message: 'Quote created successfully',
+      message: autoApprove
+        ? 'Quote approved and invoice created successfully'
+        : 'Quote created successfully',
       quote: this.serializeQuote(quote),
     };
   }

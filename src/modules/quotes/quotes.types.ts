@@ -415,6 +415,16 @@ export class CreateQuoteInput {
   @ValidateNested()
   @Type(() => QuotePaymentScheduleInput)
   paymentSchedule: QuotePaymentScheduleInput;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'When true, the quote is immediately approved and an invoice is created in a single step. The client does not need to approve the quote and can proceed directly to payment.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  autoApprove?: boolean;
 }
 
 export class UpdateQuoteInput {
