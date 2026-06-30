@@ -13,6 +13,7 @@ import { UploadsModule } from './services/uploads/uploads.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CommissionsModule } from './modules/commissions/commissions.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CommissionsModule } from './modules/commissions/commissions.module';
     ReportsModule,
     InventoryModule,
     CommissionsModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

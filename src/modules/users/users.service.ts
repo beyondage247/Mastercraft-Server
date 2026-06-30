@@ -30,6 +30,8 @@ export class UsersService {
         name: true,
         email: true,
         role: true,
+        isAdmin: true,
+        isActive: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -178,5 +180,52 @@ export class UsersService {
     return {
       message: 'Client reassigned successfully',
     };
+  }
+
+  async deactivateStaff(staffId: string, user: IAuthUser) {
+    const staff = await this.prisma.user.findFirst({
+      where: {
+        id: staffId,
+        role: Role.STAFF,
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    if (!staff) bad('Staff user not found', 404);
+    if (!staff.isActive) bad('Staff user is already deactivated');
+    if (staffId === user.id) bad('You cannot deactivate your own account');
+
+    await this.prisma.user.update({
+      where: { id: staffId },
+      data: { isActive: false },
+    });
+
+    return { message: 'Staff deactivated successfully' };
+  }
+
+  async reactivateStaff(staffId: string) {
+    const staff = await this.prisma.user.findFirst({
+      where: {
+        id: staffId,
+        role: Role.STAFF,
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    if (!staff) bad('Staff user not found', 404);
+    if (staff.isActive) bad('Staff user is already active');
+
+    await this.prisma.user.update({
+      where: { id: staffId },
+      data: { isActive: true },
+    });
+
+    return { message: 'Staff reactivated successfully' };
   }
 }

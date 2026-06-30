@@ -1,12 +1,14 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -17,6 +19,8 @@ import {
   CreateClientResponse,
   CreateStaffInput,
   CreateStaffResponse,
+  DeactivateStaffResponse,
+  ReactivateStaffResponse,
   ReassignClientInput,
   ReassignClientResponse,
   StaffListItemResponse,
@@ -142,5 +146,71 @@ export class UsersController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.users.createStaff(dto, user);
+  }
+
+  @ApiOperation({ summary: 'Deactivate a staff account' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the staff user to deactivate.',
+  })
+  @ApiOkResponse({
+    description:
+      'Deactivates the staff account. The user will no longer be able to log in or access any endpoints.',
+    type: DeactivateStaffResponse,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'The staff user is already deactivated or you are trying to deactivate your own account.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only administrators can deactivate staff accounts.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified staff user was not found.',
+  })
+  @Admin()
+  @Patch('staff/:id/deactivate')
+  async deactivateStaff(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.users.deactivateStaff(id, user);
+  }
+
+  @ApiOperation({ summary: 'Reactivate a staff account' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the staff user to reactivate.',
+  })
+  @ApiOkResponse({
+    description:
+      'Reactivates the staff account. The user will be able to log in again.',
+    type: ReactivateStaffResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The staff user is already active.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only administrators can reactivate staff accounts.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified staff user was not found.',
+  })
+  @Admin()
+  @Patch('staff/:id/reactivate')
+  async reactivateStaff(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.users.reactivateStaff(id);
   }
 }

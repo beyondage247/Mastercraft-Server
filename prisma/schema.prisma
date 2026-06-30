@@ -25,23 +25,26 @@ model User {
   passwordResetOtpExpiresAt DateTime?
   role                      Role      @default(CLIENT)
   isAdmin                   Boolean   @default(false)
+  isActive                  Boolean   @default(true)
   accountPartner            User?     @relation("StaffClients", fields: [accountPartnerId], references: [id], onDelete: SetNull)
   accountPartnerId          String?   @db.Uuid
   managedClients            User[]    @relation("StaffClients")
   createdAt                 DateTime  @default(now())
 
   // Client Specific Fields
-  phone             String?
-  company           String?
-  additionalContact String?
-  additionalEmail   String?
-  clientCredit      ClientCredit?
-  projects          Project[]
-  uploads           Upload[]
-  projectComments   ProjectComment[]
-  reports           Report[]
-  commissions       Commission[]     @relation("StaffCommissions")
-  clientCommissions Commission[]     @relation("ClientCommissions")
+  phone              String?
+  company            String?
+  additionalContact  String?
+  additionalEmail    String?
+  clientCredit       ClientCredit?
+  projects           Project[]
+  uploads            Upload[]
+  projectComments    ProjectComment[]
+  reports            Report[]
+  commissions        Commission[]              @relation("StaffCommissions")
+  clientCommissions  Commission[]              @relation("ClientCommissions")
+  documentCategories ProjectDocumentCategory[] @relation("DocumentCategoryCreator")
+  projectDocuments   ProjectDocument[]         @relation("DocumentUploader")
 
   @@index([accountPartnerId])
 }
@@ -80,6 +83,7 @@ enum PaymentMethod {
   WIRE
   CREDIT_CARD
   CHECK
+  STRIPE
 }
 
 enum QuotePaymentScheduleType {
@@ -114,6 +118,8 @@ enum ProjectPaymentStatus {
 enum CommissionStatus {
   QUOTED_COMMISSION
   APPROVED_COMMISSION
+  INVOICE_COMMISSION
+  PARTIALLY_PAID
   PAID
 }
 
@@ -130,15 +136,17 @@ model Project {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
-  stages       ProjectStage[]
-  comments     ProjectComment[]
-  quotes       Quote[]
-  invoices     Invoice[]
-  payments     Payment[]
-  client       User             @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  clientId     String           @db.Uuid
-  attachment   Attachment?      @relation(fields: [attachmentId], references: [id])
-  attachmentId String?          @db.Uuid
+  stages             ProjectStage[]
+  comments           ProjectComment[]
+  quotes             Quote[]
+  invoices           Invoice[]
+  payments           Payment[]
+  client             User                      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  clientId           String                    @db.Uuid
+  attachment         Attachment?               @relation(fields: [attachmentId], references: [id])
+  attachmentId       String?                   @db.Uuid
+  documentCategories ProjectDocumentCategory[]
+  documents          ProjectDocument[]
 
   @@index([clientId])
 }
@@ -254,6 +262,8 @@ model Commission {
   total                Decimal
   percentageCommission Decimal          @default(0)
   amount               Decimal          @default(0)
+  commissionAmountPaid Decimal          @default(0)
+  invoiceCommission    Decimal          @default(0)
   status               CommissionStatus @default(QUOTED_COMMISSION)
   paidAt               DateTime?
   createdAt            DateTime         @default(now())
@@ -406,11 +416,12 @@ model Upload {
   type String
   data Bytes
 
-  createdAt    DateTime    @default(now())
-  user         User?       @relation(fields: [userId], references: [id])
-  userId       String?     @db.Uuid
-  attachment   Attachment? @relation(fields: [attachmentId], references: [id])
-  attachmentId String?     @db.Uuid
+  createdAt        DateTime          @default(now())
+  user             User?             @relation(fields: [userId], references: [id])
+  userId           String?           @db.Uuid
+  attachment       Attachment?       @relation(fields: [attachmentId], references: [id])
+  attachmentId     String?           @db.Uuid
+  projectDocuments ProjectDocument[]
 }
 
 model Attachment {
@@ -418,4 +429,36 @@ model Attachment {
   uploads Upload[]
 
   project Project[]
+}
+
+model ProjectDocumentCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String            @db.Uuid
+  createdBy   User              @relation("DocumentCategoryCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdById String            @db.Uuid
+  documents   ProjectDocument[]
+
+  @@index([projectId])
+}
+
+model ProjectDocument {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+
+  project      Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String                   @db.Uuid
+  category     ProjectDocumentCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId   String?                  @db.Uuid
+  upload       Upload                   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  uploadId     String                   @db.Uuid
+  uploadedBy   User                     @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedById String                   @db.Uuid
+
+  @@index([projectId])
+  @@index([categoryId])
 }

@@ -69,6 +69,18 @@ export class StaffListItemResponse {
   role: Role;
 
   @ApiProperty({
+    example: true,
+    description: 'Whether the staff user has admin privileges.',
+  })
+  isAdmin: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether the staff user account is active.',
+  })
+  isActive: boolean;
+
+  @ApiProperty({
     example: '2026-05-21T01:35:00.000Z',
     description: 'Timestamp when the staff user was created.',
   })
@@ -235,6 +247,24 @@ export class ReassignClientResponse {
     example: 'Client reassigned successfully',
     description:
       'Confirmation message returned after moving a client to another staff user.',
+  })
+  message: string;
+}
+
+export class DeactivateStaffResponse {
+  @ApiProperty({
+    example: 'Staff deactivated successfully',
+    description:
+      'Confirmation message returned after deactivating a staff user.',
+  })
+  message: string;
+}
+
+export class ReactivateStaffResponse {
+  @ApiProperty({
+    example: 'Staff reactivated successfully',
+    description:
+      'Confirmation message returned after reactivating a staff user.',
   })
   message: string;
 }

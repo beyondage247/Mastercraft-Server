@@ -4,8 +4,6 @@ import {
   ProjectPaymentStatus,
 } from '@prisma/client';
 import {
-  IsDateString,
-  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -13,47 +11,40 @@ import {
   Min,
 } from 'class-validator';
 
-export class CreatePaymentInput {
-  @ApiProperty({
-    example: '2026-05-25T09:30:00.000Z',
-    description: 'Timestamp that should be stored as the payment creation time.',
-  })
-  @IsDateString()
-  createdAt: string;
-
+export class CreateCheckoutInput {
   @ApiProperty({
     example: '7ecb34de-c8dc-4fc7-8532-a65153a36429',
-    description: 'Unique identifier for the invoice receiving the payment.',
+    description: 'Unique identifier for the invoice to pay.',
   })
   @IsUUID()
   invoiceId: string;
 
-  @ApiProperty({
-    enum: PaymentMethod,
-    enumName: 'PaymentMethod',
-    example: PaymentMethod.ACH,
-    description:
-      'Payment channel used. Allowed values: ACH, WIRE, CREDIT_CARD, CHECK.',
-  })
-  @IsEnum(PaymentMethod)
-  method: PaymentMethod;
-
   @ApiPropertyOptional({
-    example: 'ACH-20260525093000000',
+    example: 1500,
     description:
-      'Optional payment reference. If omitted, the API generates one from the payment method prefix and createdAt timestamp. Provided values must start with ACH-, WIRE-, CC-, or CHK- depending on method.',
+      'Amount to pay in dollars. If omitted, the remaining invoice balance is used.',
   })
   @IsOptional()
-  @IsString()
-  reference?: string;
-
-  @ApiProperty({
-    example: 1500,
-    description: 'Amount collected for this payment.',
-  })
   @IsNumber()
   @Min(0.01)
-  amount: number;
+  amount?: number;
+}
+
+export class ConfirmCheckoutInput {
+  @ApiProperty({
+    example: 'cs_test_abc123',
+    description: 'Stripe Checkout session ID returned in the success URL.',
+  })
+  @IsString()
+  sessionId: string;
+}
+
+export class CreateCheckoutResponse {
+  @ApiProperty({
+    example: 'https://checkout.stripe.com/c/pay/cs_test_...',
+    description: 'Stripe Checkout URL to redirect the client to.',
+  })
+  url: string;
 }
 
 export class PaymentResponse {
@@ -84,13 +75,13 @@ export class PaymentResponse {
   @ApiProperty({
     enum: PaymentMethod,
     enumName: 'PaymentMethod',
-    example: PaymentMethod.WIRE,
+    example: PaymentMethod.STRIPE,
     description: 'Payment method used.',
   })
   method: PaymentMethod;
 
   @ApiProperty({
-    example: 'WIRE-23456789',
+    example: 'STRIPE-pi_3abc123',
     description: 'Reference stored against the payment.',
   })
   reference: string;
@@ -185,13 +176,13 @@ export class AdminPaymentResponse {
   @ApiProperty({
     enum: PaymentMethod,
     enumName: 'PaymentMethod',
-    example: PaymentMethod.WIRE,
+    example: PaymentMethod.STRIPE,
     description: 'Payment method used.',
   })
   method: PaymentMethod;
 
   @ApiProperty({
-    example: 'WIRE-23456789',
+    example: 'STRIPE-pi_3abc123',
     description: 'Reference stored against the payment.',
   })
   reference: string;
@@ -259,13 +250,13 @@ export class ClientPaymentResponse {
   @ApiProperty({
     enum: PaymentMethod,
     enumName: 'PaymentMethod',
-    example: PaymentMethod.WIRE,
+    example: PaymentMethod.STRIPE,
     description: 'Payment method used.',
   })
   method: PaymentMethod;
 
   @ApiProperty({
-    example: 'WIRE-23456789',
+    example: 'STRIPE-pi_3abc123',
     description: 'Reference stored against the payment.',
   })
   reference: string;
@@ -281,40 +272,6 @@ export class ClientPaymentResponse {
     description: 'Project tied to the payment.',
   })
   project: ClientPaymentProjectResponse;
-}
-
-export class CreatePaymentResponse {
-  @ApiProperty({
-    example: 'Payment recorded successfully',
-    description: 'Confirmation message returned after storing a payment.',
-  })
-  message: string;
-
-  @ApiProperty({
-    type: () => PaymentResponse,
-    description: 'The payment that was just recorded.',
-  })
-  payment: PaymentResponse;
-
-  @ApiProperty({
-    enum: ProjectPaymentStatus,
-    enumName: 'ProjectPaymentStatus',
-    example: ProjectPaymentStatus.PARTIALLY_PAID,
-    description: 'Updated payment status for the related project.',
-  })
-  paymentStatus: ProjectPaymentStatus;
-
-  @ApiProperty({
-    example: '4500',
-    description: 'Total amount paid so far across the project invoices.',
-  })
-  amountPaid: string;
-
-  @ApiProperty({
-    example: '2500',
-    description: 'Remaining balance still due across the project invoices.',
-  })
-  amountDue: string;
 }
 
 export class ProjectPaymentsResponse {
