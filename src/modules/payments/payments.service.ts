@@ -186,15 +186,16 @@ export class PaymentsService {
       bad('This invoice has already been fully paid');
     }
 
+    const remainingBalanceRounded = remainingBalance.toDecimalPlaces(2);
     const amount = dto.amount
-      ? new Prisma.Decimal(dto.amount)
-      : remainingBalance;
+      ? new Prisma.Decimal(dto.amount).toDecimalPlaces(2)
+      : remainingBalanceRounded;
 
     if (amount.lessThanOrEqualTo(0)) {
       bad('Amount must be greater than 0');
     }
 
-    if (amount.greaterThan(remainingBalance)) {
+    if (amount.greaterThan(remainingBalanceRounded)) {
       bad('Payment amount exceeds the remaining invoice balance');
     }
 
