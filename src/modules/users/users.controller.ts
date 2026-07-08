@@ -24,6 +24,10 @@ import {
   ReassignClientInput,
   ReassignClientResponse,
   StaffListItemResponse,
+  UpdateClientInput,
+  UpdateClientResponse,
+  UpdateStaffInput,
+  UpdateStaffResponse,
 } from './user.types';
 import { Admin, Auth, AuthUser } from '../auth/decorators/auth.decorator';
 import { Role } from '@prisma/client';
@@ -101,6 +105,25 @@ export class UsersController {
     return this.users.createClient(dto, user);
   }
 
+  @ApiOperation({ summary: 'Update a client account' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', format: 'uuid', description: 'Unique identifier for the client to update.' })
+  @ApiBody({ type: UpdateClientInput })
+  @ApiOkResponse({ description: 'Client updated successfully.', type: UpdateClientResponse })
+  @ApiBadRequestResponse({ description: 'Invalid request body or email already in use.' })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Non-admin staff can only edit their own clients.' })
+  @ApiNotFoundResponse({ description: 'Client not found.' })
+  @Auth([Role.STAFF])
+  @Patch('clients/:id')
+  async updateClient(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateClientInput,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.users.updateClient(id, dto, user);
+  }
+
   @ApiOperation({ summary: 'Reassign a client to another staff user' })
   @ApiBearerAuth()
   @ApiBody({ type: ReassignClientInput })
@@ -146,6 +169,25 @@ export class UsersController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.users.createStaff(dto, user);
+  }
+
+  @ApiOperation({ summary: 'Update a staff account' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', format: 'uuid', description: 'Unique identifier for the staff user to update.' })
+  @ApiBody({ type: UpdateStaffInput })
+  @ApiOkResponse({ description: 'Staff updated successfully.', type: UpdateStaffResponse })
+  @ApiBadRequestResponse({ description: 'Invalid request body or email already in use.' })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can edit staff accounts.' })
+  @ApiNotFoundResponse({ description: 'Staff user not found.' })
+  @Admin()
+  @Patch('staff/:id')
+  async updateStaff(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateStaffInput,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.users.updateStaff(id, dto, user);
   }
 
   @ApiOperation({ summary: 'Deactivate a staff account' })

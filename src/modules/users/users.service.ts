@@ -6,6 +6,8 @@ import {
   CreateClientInput,
   CreateStaffInput,
   ReassignClientInput,
+  UpdateClientInput,
+  UpdateStaffInput,
 } from './user.types';
 import { generatePassword } from 'src/utils/password.utils';
 import { MailService } from 'src/services/mail/mail.service';
@@ -145,6 +147,78 @@ export class UsersService {
     return {
       message: 'Client created successfully',
     };
+  }
+
+  async updateClient(id: string, dto: UpdateClientInput, user: IAuthUser) {
+    const client = await this.prisma.user.findFirst({
+      where: { id, role: Role.CLIENT },
+      select: { id: true, accountPartnerId: true },
+    });
+    if (!client) bad('Client not found', 404);
+
+    if (!user.isAdmin && client.accountPartnerId !== user.id) {
+      bad('You can only edit clients assigned to you', 403);
+    }
+
+    if (!Object.keys(dto).length) {
+      bad('At least one field is required');
+    }
+
+    if (dto.email) {
+      const conflict = await this.prisma.user.findFirst({
+        where: { email: dto.email, NOT: { id } },
+        select: { id: true },
+      });
+      if (conflict) bad('Email is already in use');
+    }
+
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.phone !== undefined && { phone: dto.phone }),
+        ...(dto.company !== undefined && { company: dto.company }),
+        ...(dto.additionalContact !== undefined && { additionalContact: dto.additionalContact }),
+        ...(dto.additionalEmail !== undefined && { additionalEmail: dto.additionalEmail }),
+        ...(dto.clientCredit !== undefined && { clientCredit: dto.clientCredit }),
+      },
+    });
+
+    return { message: 'Client updated successfully' };
+  }
+
+  async updateStaff(id: string, dto: UpdateStaffInput, user: IAuthUser) {
+    if (!user.isAdmin) bad('Only administrators can edit staff accounts', 403);
+
+    const staff = await this.prisma.user.findFirst({
+      where: { id, role: Role.STAFF },
+      select: { id: true },
+    });
+    if (!staff) bad('Staff user not found', 404);
+
+    if (!Object.keys(dto).length) {
+      bad('At least one field is required');
+    }
+
+    if (dto.email) {
+      const conflict = await this.prisma.user.findFirst({
+        where: { email: dto.email, NOT: { id } },
+        select: { id: true },
+      });
+      if (conflict) bad('Email is already in use');
+    }
+
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.isAdmin !== undefined && { isAdmin: dto.isAdmin }),
+      },
+    });
+
+    return { message: 'Staff updated successfully' };
   }
 
   async reassignClient(dto: ReassignClientInput) {
