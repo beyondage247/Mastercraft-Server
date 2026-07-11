@@ -57,6 +57,8 @@ interface QuoteTemplateLineItem {
   quantity: number;
   unitPrice: string;
   amount: string;
+  tax: string;
+  lineTaxAmount: string | null;
 }
 
 interface QuoteTemplateSummaryCard {
@@ -272,6 +274,8 @@ export class PdfService {
       quantity: item.quantity,
       unitPrice: item.unitPrice ?? '-',
       amount: item.amount ?? 'TBD',
+      tax: item.tax,
+      lineTaxAmount: item.lineTaxAmount,
     }));
 
     const firstPageItems = lineItems.slice(0, QUOTE_FIRST_PAGE_ITEM_LIMIT);
@@ -328,6 +332,8 @@ export class PdfService {
       quantity: item.quantity,
       unitPrice: item.unitPrice ?? '-',
       amount: item.amount ?? 'TBD',
+      tax: item.tax,
+      lineTaxAmount: item.lineTaxAmount,
     }));
 
     const firstPageItems = lineItems.slice(0, QUOTE_FIRST_PAGE_ITEM_LIMIT);

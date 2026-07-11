@@ -1,9 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role, ClientCredit } from '@prisma/client';
 import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
@@ -240,6 +241,75 @@ export class ReassignClientInput {
   })
   @IsUUID()
   staffId: string;
+}
+
+export class UpdateClientInput {
+  @ApiPropertyOptional({ example: 'Jane Client', description: 'Updated full name.' })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'jane@example.com', description: 'Updated email address.' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional({ example: '123456789', description: 'Updated phone number.' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Jane Inc.', description: 'Updated company name.' })
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @ApiPropertyOptional({ example: 'Site manager', description: 'Updated additional contact name.' })
+  @IsOptional()
+  @IsString()
+  additionalContact?: string;
+
+  @ApiPropertyOptional({ example: 'accounts@janeinc.com', description: 'Updated additional email.' })
+  @IsOptional()
+  @IsString()
+  additionalEmail?: string;
+
+  @ApiPropertyOptional({
+    enum: ClientCredit,
+    enumName: 'ClientCredit',
+    example: ClientCredit.COD,
+    description: 'Updated client credit type.',
+  })
+  @IsOptional()
+  @IsEnum(ClientCredit)
+  clientCredit?: ClientCredit;
+}
+
+export class UpdateClientResponse {
+  @ApiProperty({ example: 'Client updated successfully', description: 'Confirmation message.' })
+  message: string;
+}
+
+export class UpdateStaffInput {
+  @ApiPropertyOptional({ example: 'Jane Staff', description: 'Updated full name.' })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'jane@example.com', description: 'Updated email address.' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional({ example: false, description: 'Updated admin privilege flag.' })
+  @IsOptional()
+  @IsBoolean()
+  isAdmin?: boolean;
+}
+
+export class UpdateStaffResponse {
+  @ApiProperty({ example: 'Staff updated successfully', description: 'Confirmation message.' })
+  message: string;
 }
 
 export class ReassignClientResponse {

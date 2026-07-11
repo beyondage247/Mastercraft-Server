@@ -61,6 +61,17 @@ export class QuoteLineItemInput {
   @IsInt()
   @Min(1)
   quantity: number;
+
+  @ApiPropertyOptional({
+    example: 8,
+    description:
+      'Tax percentage for this line item. Use 0 for non-taxable items such as labor. Defaults to 0.',
+    default: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tax?: number;
 }
 
 const paymentScheduleDateDescription =
@@ -387,19 +398,22 @@ export class CreateQuoteInput {
       {
         serviceId: '8f1e52bc-5a3c-4f5b-8f80-51f0b4649224',
         quantity: 2,
+        tax: 8,
       },
       {
         serviceId: '44b4eb0d-8431-4224-9b98-2f350f0be93a',
         quantity: 1,
+        tax: 8,
       },
       {
         productName: 'Custom Trim Work',
         ourPrice: 350,
         quantity: 1,
+        tax: 0,
       },
     ],
     description:
-      'Services selected for this quote. Their productName and ourPrice are snapshotted into the quote line items together with the requested quantity. Provide productName (and optionally ourPrice) instead of serviceId to add a custom line item that is not in the service catalog.',
+      'Services selected for this quote. Their productName and ourPrice are snapshotted into the quote line items together with the requested quantity. Provide productName (and optionally ourPrice) instead of serviceId to add a custom line item that is not in the service catalog. Set tax to the applicable percentage (e.g. 8 for 8%) or 0 for non-taxable items such as labor.',
   })
   @IsArray()
   @ArrayMinSize(1)
@@ -529,19 +543,22 @@ export class UpdateQuoteInput {
       {
         serviceId: '8f1e52bc-5a3c-4f5b-8f80-51f0b4649224',
         quantity: 2,
+        tax: 8,
       },
       {
         serviceId: '44b4eb0d-8431-4224-9b98-2f350f0be93a',
         quantity: 1,
+        tax: 8,
       },
       {
         productName: 'Custom Trim Work',
         ourPrice: 350,
         quantity: 1,
+        tax: 0,
       },
     ],
     description:
-      'Replacement services for the quote line items. Their current productName and ourPrice are snapshotted into the quote together with the requested quantity. Provide productName (and optionally ourPrice) instead of serviceId to add a custom line item that is not in the service catalog.',
+      'Replacement services for the quote line items. Their current productName and ourPrice are snapshotted into the quote together with the requested quantity. Provide productName (and optionally ourPrice) instead of serviceId to add a custom line item that is not in the service catalog. Set tax to the applicable percentage (e.g. 8 for 8%) or 0 for non-taxable items.',
   })
   @IsOptional()
   @IsArray()
@@ -637,6 +654,12 @@ export class QuoteLineItemResponse {
   })
   quantity: number;
 
+  @ApiProperty({
+    example: '8',
+    description: 'Tax percentage applied to this line item as a decimal string.',
+  })
+  tax: string;
+
   @ApiPropertyOptional({
     example: '8400',
     description:
@@ -644,6 +667,14 @@ export class QuoteLineItemResponse {
     nullable: true,
   })
   lineTotal: string | null;
+
+  @ApiPropertyOptional({
+    example: '336',
+    description:
+      'Calculated tax amount for this line item as a decimal string.',
+    nullable: true,
+  })
+  lineTaxAmount: string | null;
 }
 
 export class QuoteInvoicePaymentResponse {

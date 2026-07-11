@@ -78,6 +78,7 @@ const quoteSelect = {
       productName: true,
       ourPrice: true,
       quantity: true,
+      tax: true,
     },
   },
   paymentSchedule: {
@@ -185,6 +186,7 @@ const quoteApprovalSelect = {
       productName: true,
       ourPrice: true,
       quantity: true,
+      tax: true,
     },
   },
 } satisfies Prisma.QuoteSelect;
@@ -235,6 +237,7 @@ const invoiceDocumentSelect = {
       productName: true,
       ourPrice: true,
       quantity: true,
+      tax: true,
     },
   },
   payments: {
@@ -443,16 +446,23 @@ export class QuotesService {
       clientEmail: quote.project.client.email,
       clientPhone: quote.project.client.phone ?? null,
       clientCompany: quote.project.client.company ?? null,
-      lineItems: quote.lineItems.map((lineItem) => ({
-        productName: lineItem.productName,
-        quantity: lineItem.quantity,
-        unitPrice: lineItem.ourPrice ? formatCurrency(lineItem.ourPrice) : null,
-        amount: lineItem.ourPrice
-          ? formatCurrency(lineItem.ourPrice.mul(lineItem.quantity))
-          : null,
-      })),
+      lineItems: quote.lineItems.map((lineItem) => {
+        const lineTotal = lineItem.ourPrice?.mul(lineItem.quantity) ?? null;
+        const lineTaxAmount =
+          lineTotal && lineItem.tax.greaterThan(0)
+            ? lineTotal.mul(lineItem.tax).div(100)
+            : null;
+        return {
+          productName: lineItem.productName,
+          quantity: lineItem.quantity,
+          unitPrice: lineItem.ourPrice ? formatCurrency(lineItem.ourPrice) : null,
+          amount: lineTotal ? formatCurrency(lineTotal) : null,
+          tax: lineItem.tax.toString(),
+          lineTaxAmount: lineTaxAmount ? formatCurrency(lineTaxAmount) : null,
+        };
+      }),
       subtotal: formatCurrency(quote.subtotal),
-      taxLabel: `Tax (${formatPercentage(quote.tax)})`,
+      taxLabel: `Tax (${formatPercentage(quote.tax ?? new Prisma.Decimal(0))})`,
       taxAmount: formatCurrency(quote.taxAmount),
       showTax: quote.taxAmount.greaterThan(0),
       discount: formatCurrency(quote.discount),
@@ -483,14 +493,21 @@ export class QuotesService {
       clientEmail: invoice.project.client.email,
       clientPhone: invoice.project.client.phone ?? null,
       clientCompany: invoice.project.client.company ?? null,
-      lineItems: invoice.lineItems.map((lineItem) => ({
-        productName: lineItem.productName,
-        quantity: lineItem.quantity,
-        unitPrice: lineItem.ourPrice ? formatCurrency(lineItem.ourPrice) : null,
-        amount: lineItem.ourPrice
-          ? formatCurrency(lineItem.ourPrice.mul(lineItem.quantity))
-          : null,
-      })),
+      lineItems: invoice.lineItems.map((lineItem) => {
+        const lineTotal = lineItem.ourPrice?.mul(lineItem.quantity) ?? null;
+        const lineTaxAmount =
+          lineTotal && lineItem.tax.greaterThan(0)
+            ? lineTotal.mul(lineItem.tax).div(100)
+            : null;
+        return {
+          productName: lineItem.productName,
+          quantity: lineItem.quantity,
+          unitPrice: lineItem.ourPrice ? formatCurrency(lineItem.ourPrice) : null,
+          amount: lineTotal ? formatCurrency(lineTotal) : null,
+          tax: lineItem.tax.toString(),
+          lineTaxAmount: lineTaxAmount ? formatCurrency(lineTaxAmount) : null,
+        };
+      }),
       subtotal: formatCurrency(invoice.subtotal),
       taxLabel: `Tax (${formatPercentage(invoice.tax)})`,
       taxAmount: formatCurrency(invoice.taxAmount),
@@ -579,6 +596,7 @@ export class QuotesService {
               productName: item.productName,
               ourPrice: item.ourPrice,
               quantity: item.quantity,
+              tax: item.tax,
             })),
           },
           paymentSchedule: {
@@ -641,6 +659,7 @@ export class QuotesService {
                 productName: item.productName,
                 ourPrice: item.ourPrice,
                 quantity: item.quantity,
+                tax: item.tax,
               })),
             },
           },
@@ -853,6 +872,7 @@ export class QuotesService {
                     productName: item.productName,
                     ourPrice: item.ourPrice,
                     quantity: item.quantity,
+                    tax: item.tax,
                   })),
                 },
               }
@@ -1006,7 +1026,7 @@ export class QuotesService {
             dateIssued: quote.dateIssued,
             validUntil: quote.validUntil,
             subtotal: quote.subtotal,
-            tax: quote.tax,
+            tax: quote.tax ?? new Prisma.Decimal(0),
             taxAmount: quote.taxAmount,
             discount: quote.discount,
             shippingFee: quote.shippingFee,
@@ -1016,6 +1036,7 @@ export class QuotesService {
                 productName: lineItem.productName,
                 ourPrice: lineItem.ourPrice,
                 quantity: lineItem.quantity,
+                tax: lineItem.tax,
               })),
             },
           },
@@ -1267,7 +1288,7 @@ export class QuotesService {
       clientPhone: project.client.phone ?? null,
       projectLocation: project.location ?? null,
       subtotal: formatCurrency(quote.subtotal),
-      taxLabel: `Tax (${formatPercentage(quote.tax)})`,
+      taxLabel: `Tax (${formatPercentage(quote.tax ?? new Prisma.Decimal(0))})`,
       taxAmount: formatCurrency(quote.taxAmount),
       showTax: quote.taxAmount.greaterThan(0),
       discount: formatCurrency(quote.discount),
@@ -1319,7 +1340,7 @@ export class QuotesService {
       clientPhone: quote.project.client.phone ?? null,
       projectLocation: quote.project.location ?? null,
       subtotal: formatCurrency(quote.subtotal),
-      taxLabel: `Tax (${formatPercentage(quote.tax)})`,
+      taxLabel: `Tax (${formatPercentage(quote.tax ?? new Prisma.Decimal(0))})`,
       taxAmount: formatCurrency(quote.taxAmount),
       showTax: quote.taxAmount.greaterThan(0),
       discount: formatCurrency(quote.discount),
@@ -2046,6 +2067,7 @@ export class QuotesService {
 
     const itemMap = new Map(catalogItems.map((item) => [item.id, item]));
     return lineItems.map((lineItem) => {
+      const tax = this.toNonNegativeDecimal(lineItem.tax ?? 0, 'lineItems.tax');
       if (!lineItem.serviceId) {
         return {
           productName: lineItem.productName!.trim(),
@@ -2057,6 +2079,7 @@ export class QuotesService {
                 )
               : null,
           quantity: lineItem.quantity,
+          tax,
         };
       }
 
@@ -2067,6 +2090,7 @@ export class QuotesService {
         productName: item.productName,
         ourPrice: item.ourPrice,
         quantity: lineItem.quantity,
+        tax,
       };
     });
   }
@@ -2172,7 +2196,7 @@ export class QuotesService {
       dateIssued: quote.dateIssued.toISOString(),
       validUntil: quote.validUntil.toISOString(),
       subtotal: quote.subtotal.toString(),
-      tax: quote.tax.toString(),
+      tax: (quote.tax ?? new Prisma.Decimal(0)).toString(),
       taxAmount: quote.taxAmount.toString(),
       discount: quote.discount.toString(),
       shippingFee: quote.shippingFee.toString(),
@@ -2183,13 +2207,22 @@ export class QuotesService {
         status: quote.project.status,
         clientId: quote.project.clientId,
       },
-      lineItems: quote.lineItems.map((lineItem) => ({
-        id: lineItem.id,
-        productName: lineItem.productName,
-        ourPrice: lineItem.ourPrice?.toString() ?? null,
-        quantity: lineItem.quantity,
-        lineTotal: lineItem.ourPrice?.mul(lineItem.quantity).toString() ?? null,
-      })),
+      lineItems: quote.lineItems.map((lineItem) => {
+        const lineTotal = lineItem.ourPrice?.mul(lineItem.quantity) ?? null;
+        const lineTaxAmount =
+          lineTotal && lineItem.tax.greaterThan(0)
+            ? lineTotal.mul(lineItem.tax).div(100)
+            : null;
+        return {
+          id: lineItem.id,
+          productName: lineItem.productName,
+          ourPrice: lineItem.ourPrice?.toString() ?? null,
+          quantity: lineItem.quantity,
+          tax: lineItem.tax.toString(),
+          lineTotal: lineTotal?.toString() ?? null,
+          lineTaxAmount: lineTaxAmount?.toString() ?? null,
+        };
+      }),
       paymentSchedule: this.serializePaymentSchedule(quote.paymentSchedule),
       invoices: quote.invoices.map((invoice) => ({
         id: invoice.id,

@@ -238,7 +238,7 @@ model Quote {
   dateIssued    DateTime
   validUntil    DateTime
   subtotal      Decimal
-  tax           Decimal
+  tax           Decimal?
   taxAmount     Decimal
   discount      Decimal     @default(0)
   shippingFee   Decimal     @default(0)
@@ -287,6 +287,7 @@ model QuoteLineItem {
   productName String
   ourPrice    Decimal?
   quantity    Int      @default(1)
+  tax         Decimal  @default(0)
   createdAt   DateTime @default(now())
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
@@ -364,6 +365,7 @@ model InvoiceLineItem {
   productName String
   ourPrice    Decimal?
   quantity    Int      @default(1)
+  tax         Decimal  @default(0)
   createdAt   DateTime @default(now())
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)

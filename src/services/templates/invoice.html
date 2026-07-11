@@ -485,7 +485,7 @@
       <tbody>
         {{#each firstPageItems}}
         <tr>
-          <td>{{productName}}</td>
+          <td>{{productName}}{{#if lineTaxAmount}} <span style="font-size:9px;color:#C0392B;font-weight:600;">(Tax: {{tax}}%)</span>{{/if}}</td>
           <td>{{quantity}}</td>
           <td>{{unitPrice}}</td>
           <td>{{amount}}</td>
@@ -599,7 +599,7 @@
       <tbody>
         {{#each items}}
         <tr>
-          <td>{{productName}}</td>
+          <td>{{productName}}{{#if lineTaxAmount}} <span style="font-size:9px;color:#C0392B;font-weight:600;">(Tax: {{tax}}%)</span>{{/if}}</td>
           <td>{{quantity}}</td>
           <td>{{unitPrice}}</td>
           <td>{{amount}}</td>
