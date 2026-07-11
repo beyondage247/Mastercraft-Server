@@ -3,6 +3,8 @@ export interface PdfDocumentLineItem {
   quantity: number;
   unitPrice: string | null;
   amount: string | null;
+  tax: string;
+  lineTaxAmount: string | null;
 }
 
 export interface PdfPaymentScheduleRow {
