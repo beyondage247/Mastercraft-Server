@@ -272,12 +272,12 @@ export class QuotesController {
   @ApiBody({ type: UpdateQuoteInput })
   @ApiOkResponse({
     description:
-      'Updates the quote fields and refreshes the stored service snapshots and quantities when line items are replaced. Rejected or in-review quotes are reset to PENDING when staff edits them.',
+      'Updates the quote fields and refreshes the stored service snapshots and quantities when line items are replaced. Rejected or in-review quotes are reset to PENDING when staff edits them. Approved quotes remain approved after editing.',
     type: UpdateQuoteResponse,
   })
   @ApiBadRequestResponse({
     description:
-      'The request body is invalid, no update fields were provided, the quote is already approved, or a selected service is invalid.',
+      'The request body is invalid, no update fields were provided, or a selected service is invalid.',
   })
   @ApiUnauthorizedResponse({
     description: 'A valid bearer token is required.',
