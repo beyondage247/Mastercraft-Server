@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -30,6 +31,7 @@ import { QuotesService } from './quotes.service';
 import {
   CreateQuoteInput,
   CreateQuoteResponse,
+  DeleteInvoiceResponse,
   QuoteResponse,
   RespondToQuoteInput,
   RespondToQuoteResponse,
@@ -295,6 +297,40 @@ export class QuotesController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.quotes.updateQuote(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Delete an invoice' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the invoice to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Deletes the invoice, resets the parent quote to PENDING, reverts the commission to QUOTED_COMMISSION, and recalculates the project status.',
+    type: DeleteInvoiceResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The invoice has recorded payments and cannot be deleted.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Only staff users can delete invoices, and non-admin staff can only delete invoices for their managed clients.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified invoice was not found.',
+  })
+  @Auth([Role.STAFF])
+  @Delete('invoices/:id')
+  async deleteInvoice(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.quotes.deleteInvoice(id, user);
   }
 
   @ApiOperation({ summary: 'Respond to a quote as the client' })

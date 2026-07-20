@@ -765,10 +765,6 @@ export class QuotesService {
   async updateQuote(id: string, dto: UpdateQuoteInput, user: IAuthUser) {
     const quote = await this.getQuoteForStaff(id, user);
 
-    if (quote.status === QuoteStatus.APPROVED) {
-      bad('Approved quotes cannot be edited');
-    }
-
     const data: Prisma.QuoteUpdateInput = {};
 
     if (dto.name !== undefined) {
@@ -1135,6 +1131,87 @@ export class QuotesService {
 
     return {
       message: 'Quote response recorded successfully',
+      quote: this.serializeQuote(updatedQuote),
+    };
+  }
+
+  async deleteInvoice(id: string, user: IAuthUser) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        quoteId: true,
+        projectId: true,
+        _count: { select: { payments: true } },
+        quote: {
+          select: {
+            commission: { select: { id: true } },
+            project: {
+              select: {
+                id: true,
+                client: { select: { accountPartnerId: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) bad('Invoice not found', 404);
+
+    if (!user.isAdmin && invoice.quote.project.client.accountPartnerId !== user.id) {
+      bad('You can only manage invoices for projects assigned to your clients', 403);
+    }
+
+    if (invoice._count.payments > 0) {
+      bad('Cannot delete an invoice that has recorded payments');
+    }
+
+    const { quoteId, projectId } = invoice;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invoice.delete({ where: { id } });
+
+      await tx.quote.update({
+        where: { id: quoteId },
+        data: { status: QuoteStatus.PENDING, clientComment: null },
+      });
+
+      if (invoice.quote.commission) {
+        await tx.commission.update({
+          where: { quoteId },
+          data: { status: CommissionStatus.QUOTED_COMMISSION },
+        });
+      }
+
+      const remainingInvoiceCount = await tx.invoice.count({
+        where: { projectId },
+      });
+
+      const billing = await this.getProjectBillingTotals(tx, projectId);
+
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          status:
+            remainingInvoiceCount === 0
+              ? ProjectStatus.QUOTED
+              : ProjectStatus.IN_PRODUCTION,
+          paymentStatus: this.resolveProjectPaymentStatus(
+            billing.amountPaid,
+            billing.totalInvoiced,
+          ),
+        },
+      });
+    });
+
+    const updatedQuote = await this.prisma.quote.findUniqueOrThrow({
+      where: { id: quoteId },
+      select: quoteSelect,
+    });
+
+    return {
+      message: 'Invoice deleted successfully',
       quote: this.serializeQuote(updatedQuote),
     };
   }
