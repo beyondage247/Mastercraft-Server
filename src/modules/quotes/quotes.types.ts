@@ -1089,3 +1089,17 @@ export class RespondToQuoteResponse {
   })
   quote: QuoteResponse;
 }
+
+export class DeleteInvoiceResponse {
+  @ApiProperty({
+    example: 'Invoice deleted successfully',
+    description: 'Confirmation message returned after the invoice is deleted.',
+  })
+  message: string;
+
+  @ApiProperty({
+    type: () => QuoteResponse,
+    description: 'The parent quote after being reset to PENDING.',
+  })
+  quote: QuoteResponse;
+}

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -30,6 +31,7 @@ import { QuotesService } from './quotes.service';
 import {
   CreateQuoteInput,
   CreateQuoteResponse,
+  DeleteInvoiceResponse,
   QuoteResponse,
   RespondToQuoteInput,
   RespondToQuoteResponse,
@@ -270,12 +272,12 @@ export class QuotesController {
   @ApiBody({ type: UpdateQuoteInput })
   @ApiOkResponse({
     description:
-      'Updates the quote fields and refreshes the stored service snapshots and quantities when line items are replaced. Rejected or in-review quotes are reset to PENDING when staff edits them.',
+      'Updates the quote fields and refreshes the stored service snapshots and quantities when line items are replaced. Rejected or in-review quotes are reset to PENDING when staff edits them. Approved quotes remain approved after editing.',
     type: UpdateQuoteResponse,
   })
   @ApiBadRequestResponse({
     description:
-      'The request body is invalid, no update fields were provided, the quote is already approved, or a selected service is invalid.',
+      'The request body is invalid, no update fields were provided, or a selected service is invalid.',
   })
   @ApiUnauthorizedResponse({
     description: 'A valid bearer token is required.',
@@ -295,6 +297,40 @@ export class QuotesController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.quotes.updateQuote(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Delete an invoice' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the invoice to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Deletes the invoice, resets the parent quote to PENDING, reverts the commission to QUOTED_COMMISSION, and recalculates the project status.',
+    type: DeleteInvoiceResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The invoice has recorded payments and cannot be deleted.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Only staff users can delete invoices, and non-admin staff can only delete invoices for their managed clients.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified invoice was not found.',
+  })
+  @Auth([Role.STAFF])
+  @Delete('invoices/:id')
+  async deleteInvoice(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.quotes.deleteInvoice(id, user);
   }
 
   @ApiOperation({ summary: 'Respond to a quote as the client' })
