@@ -1090,6 +1090,14 @@ export class RespondToQuoteResponse {
   quote: QuoteResponse;
 }
 
+export class DeleteQuoteResponse {
+  @ApiProperty({
+    example: 'Quote deleted successfully',
+    description: 'Confirmation message returned after the quote is deleted.',
+  })
+  message: string;
+}
+
 export class DeleteInvoiceResponse {
   @ApiProperty({
     example: 'Invoice deleted successfully',

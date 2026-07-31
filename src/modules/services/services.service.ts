@@ -360,6 +360,17 @@ export class ServicesService {
     };
   }
 
+  async deleteCatalogItem(id: string) {
+    const item = await this.prisma.catalogItem.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!item) bad('Catalog item not found', 404);
+
+    await this.prisma.catalogItem.delete({ where: { id } });
+    return { message: 'Catalog item deleted successfully' };
+  }
+
   private getErrorMessage(error: unknown) {
     if (error instanceof Error) return error.message;
     return 'Invalid row data';

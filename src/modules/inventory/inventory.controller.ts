@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -34,6 +35,7 @@ import { InventoryService } from './inventory.service';
 import {
   CreateInventoryItemInput,
   CreateInventoryItemResponse,
+  DeleteInventoryItemResponse,
   ImportInventoryBody,
   ImportInventoryResponse,
   InventoryItemResponse,
@@ -42,6 +44,7 @@ import {
   UpdateInventoryItemInput,
   UpdateInventoryItemResponse,
 } from './inventory.types';
+import { Admin } from '../auth/decorators/auth.decorator';
 
 @ApiTags('inventory')
 @ApiBearerAuth()
@@ -204,5 +207,30 @@ export class InventoryController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.inventory.updateInventoryItem(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Delete an inventory item' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the inventory item to delete.',
+  })
+  @ApiOkResponse({
+    description: 'Permanently deletes the specified inventory item.',
+    type: DeleteInventoryItemResponse,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only administrators can delete inventory items.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified inventory item was not found.',
+  })
+  @Admin()
+  @Delete(':id')
+  async deleteInventoryItem(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.inventory.deleteInventoryItem(id);
   }
 }

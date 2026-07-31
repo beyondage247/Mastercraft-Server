@@ -622,3 +622,11 @@ export class ImportInventoryBody {
   })
   file: unknown;
 }
+
+export class DeleteInventoryItemResponse {
+  @ApiProperty({
+    example: 'Inventory item deleted successfully',
+    description: 'Confirmation message returned after deleting an inventory item.',
+  })
+  message: string;
+}

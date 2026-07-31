@@ -65,6 +65,7 @@ const projectSelect = {
   paymentStatus: true,
   startDate: true,
   endDate: true,
+  isArchived: true,
   createdAt: true,
   quotes: {
     orderBy: {
@@ -153,9 +154,42 @@ export class ProjectsService {
     private readonly mail: MailService,
   ) {}
 
+  async deleteProject(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        attachmentId: true,
+        attachment: { select: { uploads: { select: { id: true } } } },
+        documents: { select: { uploadId: true } },
+      },
+    });
+
+    if (!project) bad('Project not found', 404);
+
+    const uploadIdsToDelete = [
+      ...new Set([
+        ...project.documents.map((d) => d.uploadId),
+        ...(project.attachment?.uploads.map((u) => u.id) ?? []),
+      ]),
+    ];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.project.delete({ where: { id: projectId } });
+      if (project.attachmentId) {
+        await tx.attachment.delete({ where: { id: project.attachmentId } });
+      }
+      if (uploadIdsToDelete.length) {
+        await tx.upload.deleteMany({ where: { id: { in: uploadIdsToDelete } } });
+      }
+    });
+
+    return { message: 'Project deleted successfully' };
+  }
+
   async getProjectList(user: IAuthUser) {
     return this.prisma.project.findMany({
-      where: this.getProjectVisibilityWhere(user),
+      where: { ...this.getProjectVisibilityWhere(user), isArchived: false },
       orderBy: {
         createdAt: 'desc',
       },
@@ -182,7 +216,7 @@ export class ProjectsService {
     }
 
     return this.prisma.project.findMany({
-      where: { clientId },
+      where: { clientId, isArchived: false },
       orderBy: {
         createdAt: 'desc',
       },
@@ -257,10 +291,10 @@ export class ProjectsService {
       );
     }
 
-    const projectStartDate = new Date(dto.startDate);
-    const projectEndDate = new Date(dto.endDate);
+    const projectStartDate = dto.startDate ? new Date(dto.startDate) : new Date();
+    const projectEndDate = dto.endDate ? new Date(dto.endDate) : new Date();
 
-    if (projectEndDate < projectStartDate) {
+    if (dto.startDate && dto.endDate && projectEndDate < projectStartDate) {
       bad('Project end date must be on or after the project start date');
     }
 
@@ -305,9 +339,9 @@ export class ProjectsService {
     const project = await this.prisma.project.create({
       data: {
         client: connectId(dto.clientId),
-        fabrication: dto.fabrication,
-        description: dto.description,
-        location: dto.location,
+        fabrication: dto.fabrication ?? 0,
+        description: dto.description ?? '',
+        location: dto.location ?? '',
         name: dto.name,
         status: ProjectStatus.PENDING,
         startDate: projectStartDate,
@@ -698,6 +732,36 @@ export class ProjectsService {
       message: 'Project comment added successfully',
       comment,
     };
+  }
+
+  async archiveProject(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, isArchived: true },
+    });
+    if (!project) bad('Project not found', 404);
+    if (project.isArchived) bad('Project is already archived');
+
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: { isArchived: true },
+    });
+    return { message: 'Project archived successfully' };
+  }
+
+  async restoreProject(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, isArchived: true },
+    });
+    if (!project) bad('Project not found', 404);
+    if (!project.isArchived) bad('Project is not archived');
+
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: { isArchived: false },
+    });
+    return { message: 'Project restored successfully' };
   }
 
   private toStageCreateInput(

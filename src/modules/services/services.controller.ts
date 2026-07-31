@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -28,11 +29,12 @@ import {
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Auth } from '../auth/decorators/auth.decorator';
+import { Admin, Auth } from '../auth/decorators/auth.decorator';
 import {
   CatalogItemResponse,
   CreateCatalogItemInput,
   CreateCatalogItemResponse,
+  DeleteCatalogItemResponse,
   ImportCatalogItemsBody,
   ImportCatalogItemsResponse,
   UpdateCatalogItemInput,
@@ -160,5 +162,30 @@ export class ServicesController {
     @Body() dto: UpdateCatalogItemInput,
   ) {
     return this.services.updateCatalogItem(id, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a catalog item' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the catalog item to delete.',
+  })
+  @ApiOkResponse({
+    description: 'Permanently deletes the specified catalog item.',
+    type: DeleteCatalogItemResponse,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only administrators can delete catalog items.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified catalog item was not found.',
+  })
+  @Admin()
+  @Delete(':id')
+  async deleteCatalogItem(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.services.deleteCatalogItem(id);
   }
 }

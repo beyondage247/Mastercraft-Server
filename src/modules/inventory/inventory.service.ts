@@ -541,6 +541,17 @@ export class InventoryService {
     };
   }
 
+  async deleteInventoryItem(id: string) {
+    const item = await this.prisma.inventoryItem.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!item) bad('Inventory item not found', 404);
+
+    await this.prisma.inventoryItem.delete({ where: { id } });
+    return { message: 'Inventory item deleted successfully' };
+  }
+
   private getErrorMessage(error: unknown) {
     if (error instanceof Error) return error.message;
     return 'Invalid row data';

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -14,15 +14,19 @@ import {
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import {
+  ArchiveClientResponse,
   ClientListItemResponse,
   CreateClientInput,
   CreateClientResponse,
   CreateStaffInput,
   CreateStaffResponse,
   DeactivateStaffResponse,
+  DeleteClientResponse,
+  DeleteStaffResponse,
   ReactivateStaffResponse,
   ReassignClientInput,
   ReassignClientResponse,
+  RestoreClientResponse,
   StaffListItemResponse,
   UpdateClientInput,
   UpdateClientResponse,
@@ -122,6 +126,71 @@ export class UsersController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.users.updateClient(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Archive a client account' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the client to archive.',
+  })
+  @ApiOkResponse({
+    description:
+      'Marks the client as archived. Archived clients are excluded from standard list views and cannot log in. Their data and projects are preserved.',
+    type: ArchiveClientResponse,
+  })
+  @ApiBadRequestResponse({ description: 'The client is already archived.' })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can archive clients.' })
+  @ApiNotFoundResponse({ description: 'The specified client was not found.' })
+  @Admin()
+  @Patch('clients/:id/archive')
+  async archiveClient(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.users.archiveClient(id);
+  }
+
+  @ApiOperation({ summary: 'Restore an archived client account' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the client to restore.',
+  })
+  @ApiOkResponse({
+    description:
+      'Removes the archived flag from the client so they appear in standard list views and can log in again.',
+    type: RestoreClientResponse,
+  })
+  @ApiBadRequestResponse({ description: 'The client is not archived.' })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can restore clients.' })
+  @ApiNotFoundResponse({ description: 'The specified client was not found.' })
+  @Admin()
+  @Patch('clients/:id/restore')
+  async restoreClient(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.users.restoreClient(id);
+  }
+
+  @ApiOperation({ summary: 'Delete a client account' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the client to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Permanently deletes the client account and all associated data including projects, quotes, invoices, payments, commissions, documents, and uploads.',
+    type: DeleteClientResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can delete clients.' })
+  @ApiNotFoundResponse({ description: 'The specified client was not found.' })
+  @Admin()
+  @Delete('clients/:id')
+  async deleteClient(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.users.deleteClient(id);
   }
 
   @ApiOperation({ summary: 'Reassign a client to another staff user' })
@@ -254,5 +323,38 @@ export class UsersController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.users.reactivateStaff(id);
+  }
+
+  @ApiOperation({ summary: 'Delete a staff account' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the staff user to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Permanently deletes the staff account and all attached data including commissions, document categories, project documents, and uploads. Clients managed by this staff member have their account partner cleared.',
+    type: DeleteStaffResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'You cannot delete your own account.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only administrators can delete staff accounts.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The specified staff user was not found.',
+  })
+  @Admin()
+  @Delete('staff/:id')
+  async deleteStaff(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.users.deleteStaff(id, user);
   }
 }

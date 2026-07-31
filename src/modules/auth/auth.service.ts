@@ -37,6 +37,7 @@ export class AuthService {
     });
     if (!user) bad('Invalid credentials');
     if (!user.isActive) bad('Your account has been deactivated', 403);
+    if (user.isArchived) bad('Your account has been archived', 403);
     const isMatch = await verify(user.password, password);
     if (!isMatch) bad('Invalid credentials');
 

@@ -44,6 +44,7 @@ export class UsersService {
     return this.prisma.user.findMany({
       where: {
         role: Role.CLIENT,
+        isArchived: false,
         ...(user.isAdmin ? {} : { accountPartnerId: user.id }),
       },
       select: {
@@ -56,6 +57,7 @@ export class UsersService {
         additionalEmail: true,
         clientCredit: true,
         accountPartnerId: true,
+        isArchived: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -254,6 +256,114 @@ export class UsersService {
     return {
       message: 'Client reassigned successfully',
     };
+  }
+
+  async archiveClient(clientId: string) {
+    const client = await this.prisma.user.findFirst({
+      where: { id: clientId, role: Role.CLIENT },
+      select: { id: true, isArchived: true },
+    });
+    if (!client) bad('Client not found', 404);
+    if (client.isArchived) bad('Client is already archived');
+
+    await this.prisma.user.update({
+      where: { id: clientId },
+      data: { isArchived: true },
+    });
+    return { message: 'Client archived successfully' };
+  }
+
+  async restoreClient(clientId: string) {
+    const client = await this.prisma.user.findFirst({
+      where: { id: clientId, role: Role.CLIENT },
+      select: { id: true, isArchived: true },
+    });
+    if (!client) bad('Client not found', 404);
+    if (!client.isArchived) bad('Client is not archived');
+
+    await this.prisma.user.update({
+      where: { id: clientId },
+      data: { isArchived: false },
+    });
+    return { message: 'Client restored successfully' };
+  }
+
+  async deleteClient(clientId: string) {
+    const client = await this.prisma.user.findFirst({
+      where: { id: clientId, role: Role.CLIENT },
+      select: {
+        id: true,
+        uploads: { select: { id: true } },
+        projectDocuments: { select: { uploadId: true } },
+        projects: {
+          select: {
+            id: true,
+            attachmentId: true,
+            attachment: { select: { uploads: { select: { id: true } } } },
+            documents: { select: { uploadId: true } },
+          },
+        },
+      },
+    });
+    if (!client) bad('Client not found', 404);
+
+    const attachmentIds = client.projects
+      .filter((p) => p.attachmentId)
+      .map((p) => p.attachmentId!);
+
+    const uploadIdsToDelete = [
+      ...new Set([
+        ...client.uploads.map((u) => u.id),
+        ...client.projectDocuments.map((d) => d.uploadId),
+        ...client.projects.flatMap((p) => p.documents.map((d) => d.uploadId)),
+        ...client.projects.flatMap(
+          (p) => p.attachment?.uploads.map((u) => u.id) ?? [],
+        ),
+      ]),
+    ];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.delete({ where: { id: clientId } });
+      if (attachmentIds.length) {
+        await tx.attachment.deleteMany({ where: { id: { in: attachmentIds } } });
+      }
+      if (uploadIdsToDelete.length) {
+        await tx.upload.deleteMany({ where: { id: { in: uploadIdsToDelete } } });
+      }
+    });
+
+    return { message: 'Client deleted successfully' };
+  }
+
+  async deleteStaff(staffId: string, user: IAuthUser) {
+    if (staffId === user.id) bad('You cannot delete your own account');
+
+    const staff = await this.prisma.user.findFirst({
+      where: { id: staffId, role: Role.STAFF },
+      select: {
+        id: true,
+        projectDocuments: { select: { uploadId: true } },
+        uploads: { select: { id: true } },
+      },
+    });
+
+    if (!staff) bad('Staff user not found', 404);
+
+    const uploadIdsToDelete = [
+      ...new Set([
+        ...staff.projectDocuments.map((d) => d.uploadId),
+        ...staff.uploads.map((u) => u.id),
+      ]),
+    ];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.delete({ where: { id: staffId } });
+      if (uploadIdsToDelete.length) {
+        await tx.upload.deleteMany({ where: { id: { in: uploadIdsToDelete } } });
+      }
+    });
+
+    return { message: 'Staff deleted successfully' };
   }
 
   async deactivateStaff(staffId: string, user: IAuthUser) {

@@ -25,13 +25,14 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { Auth, AuthUser } from '../auth/decorators/auth.decorator';
+import { Admin, Auth, AuthUser } from '../auth/decorators/auth.decorator';
 import { IAuthUser } from '../auth/auth.types';
 import { QuotesService } from './quotes.service';
 import {
   CreateQuoteInput,
   CreateQuoteResponse,
   DeleteInvoiceResponse,
+  DeleteQuoteResponse,
   QuoteResponse,
   RespondToQuoteInput,
   RespondToQuoteResponse,
@@ -262,6 +263,30 @@ export class QuotesController {
     return this.quotes.createQuote(dto, user);
   }
 
+  @ApiOperation({ summary: 'Delete a quote' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the quote to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Permanently deletes the quote and all attached data (line items, payment schedule, commission, and any invoices with their line items and payments). Recalculates the project status based on remaining quotes and invoices.',
+    type: DeleteQuoteResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can delete quotes.' })
+  @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
+  @Admin()
+  @Delete(':id')
+  async deleteQuote(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.quotes.deleteQuote(id, user);
+  }
+
   @ApiOperation({ summary: 'Update a quote' })
   @ApiBearerAuth()
   @ApiParam({
@@ -308,11 +333,8 @@ export class QuotesController {
   })
   @ApiOkResponse({
     description:
-      'Deletes the invoice, resets the parent quote to PENDING, reverts the commission to QUOTED_COMMISSION, and recalculates the project status.',
+      'Permanently deletes the invoice and its payments, resets the parent quote to PENDING, reverts the commission to QUOTED_COMMISSION, and recalculates the project status.',
     type: DeleteInvoiceResponse,
-  })
-  @ApiBadRequestResponse({
-    description: 'The invoice has recorded payments and cannot be deleted.',
   })
   @ApiUnauthorizedResponse({
     description: 'A valid bearer token is required.',
