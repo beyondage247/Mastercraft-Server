@@ -236,6 +236,19 @@ export class CommissionsService {
     return total.mul(percentageCommission).div(hundred);
   }
 
+  async deleteCommission(id: string) {
+    const commission = await this.prisma.commission.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!commission) bad('Commission not found', 404);
+
+    await this.prisma.commission.delete({ where: { id } });
+
+    return { message: 'Commission deleted successfully' };
+  }
+
   private serializeCommission(commission: CommissionRecord) {
     const invoice = commission.quote.invoices[0] ?? null;
     const amountPaid = invoice

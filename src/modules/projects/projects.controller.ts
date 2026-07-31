@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -20,14 +21,17 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Auth, AuthUser } from '../auth/decorators/auth.decorator';
+import { Admin, Auth, AuthUser } from '../auth/decorators/auth.decorator';
 import { IAuthUser } from '../auth/auth.types';
 import {
+  ArchiveProjectResponse,
   CreateProjectInput,
   CreateProjectCommentInput,
   CreateProjectCommentResponse,
   CreateProjectResponse,
+  DeleteProjectResponse,
   ProjectResponse,
+  RestoreProjectResponse,
   UpdateProjectAttachmentInput,
   UpdateProjectAttachmentResponse,
   UpdateProjectResponse,
@@ -232,6 +236,81 @@ export class ProjectsController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.projects.updateProjectStatus(projectId, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Delete a project' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'projectId',
+    format: 'uuid',
+    description: 'Unique identifier for the project to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Permanently deletes the project and all associated data including quotes, invoices, payments, commissions, stages, comments, and documents.',
+    type: DeleteProjectResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can delete projects.' })
+  @ApiNotFoundResponse({ description: 'The specified project was not found.' })
+  @Admin()
+  @Delete(':projectId')
+  async deleteProject(
+    @Param('projectId', new ParseUUIDPipe()) projectId: string,
+  ) {
+    return this.projects.deleteProject(projectId);
+  }
+
+  @ApiOperation({ summary: 'Archive a project' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'projectId',
+    format: 'uuid',
+    description: 'Unique identifier for the project to archive.',
+  })
+  @ApiOkResponse({
+    description:
+      'Marks the project as archived. Archived projects are excluded from standard list views but their data is preserved and the project can be restored.',
+    type: ArchiveProjectResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The project is already archived.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can archive projects.' })
+  @ApiNotFoundResponse({ description: 'The specified project was not found.' })
+  @Admin()
+  @Patch(':projectId/archive')
+  async archiveProject(
+    @Param('projectId', new ParseUUIDPipe()) projectId: string,
+  ) {
+    return this.projects.archiveProject(projectId);
+  }
+
+  @ApiOperation({ summary: 'Restore an archived project' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'projectId',
+    format: 'uuid',
+    description: 'Unique identifier for the project to restore.',
+  })
+  @ApiOkResponse({
+    description:
+      'Removes the archived flag from the project so it appears in standard list views again.',
+    type: RestoreProjectResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The project is not archived.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can restore projects.' })
+  @ApiNotFoundResponse({ description: 'The specified project was not found.' })
+  @Admin()
+  @Patch(':projectId/restore')
+  async restoreProject(
+    @Param('projectId', new ParseUUIDPipe()) projectId: string,
+  ) {
+    return this.projects.restoreProject(projectId);
   }
 
   @ApiOperation({ summary: 'Create a project' })

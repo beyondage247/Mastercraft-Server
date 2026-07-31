@@ -269,3 +269,11 @@ export class UpdateCommissionResponse {
   })
   commission: CommissionResponse;
 }
+
+export class DeleteCommissionResponse {
+  @ApiProperty({
+    example: 'Commission deleted successfully',
+    description: 'Confirmation message returned after deleting a commission.',
+  })
+  message: string;
+}

@@ -1135,6 +1135,42 @@ export class QuotesService {
     };
   }
 
+  async deleteQuote(id: string, user: IAuthUser) {
+    const quote = await this.getQuoteForStaff(id, user);
+    const projectId = quote.project.id;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.quote.delete({ where: { id } });
+
+      const [remainingQuoteCount, remainingInvoiceCount] = await Promise.all([
+        tx.quote.count({ where: { projectId } }),
+        tx.invoice.count({ where: { projectId } }),
+      ]);
+
+      const billing = await this.getProjectBillingTotals(tx, projectId);
+
+      const newStatus =
+        remainingInvoiceCount > 0
+          ? ProjectStatus.IN_PRODUCTION
+          : remainingQuoteCount > 0
+            ? ProjectStatus.QUOTED
+            : ProjectStatus.PENDING;
+
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          status: newStatus,
+          paymentStatus: this.resolveProjectPaymentStatus(
+            billing.amountPaid,
+            billing.totalInvoiced,
+          ),
+        },
+      });
+    });
+
+    return { message: 'Quote deleted successfully' };
+  }
+
   async deleteInvoice(id: string, user: IAuthUser) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id },
@@ -1142,7 +1178,6 @@ export class QuotesService {
         id: true,
         quoteId: true,
         projectId: true,
-        _count: { select: { payments: true } },
         quote: {
           select: {
             commission: { select: { id: true } },
@@ -1161,10 +1196,6 @@ export class QuotesService {
 
     if (!user.isAdmin && invoice.quote.project.client.accountPartnerId !== user.id) {
       bad('You can only manage invoices for projects assigned to your clients', 403);
-    }
-
-    if (invoice._count.payments > 0) {
-      bad('Cannot delete an invoice that has recorded payments');
     }
 
     const { quoteId, projectId } = invoice;

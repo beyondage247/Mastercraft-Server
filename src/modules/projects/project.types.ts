@@ -79,41 +79,47 @@ export class CreateProjectInput {
   @IsString()
   name: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Custom kitchen cabinetry and finishing works.',
     description: 'Detailed description of the project.',
   })
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Lekki, Lagos',
     description: 'Project location.',
   })
+  @IsOptional()
   @IsString()
-  location: string;
+  location?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 12,
     description: 'Fabrication effort or quantity tracked for the project.',
+    default: 0,
   })
+  @IsOptional()
   @IsInt()
   @Min(0)
-  fabrication: number;
+  fabrication?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2026-05-23T00:00:00.000Z',
-    description: 'Overall project start date.',
+    description: 'Overall project start date. Defaults to today when omitted.',
   })
+  @IsOptional()
   @IsDateString()
-  startDate: string;
+  startDate?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2026-06-30T00:00:00.000Z',
-    description: 'Overall project end date.',
+    description: 'Overall project end date. Defaults to today when omitted.',
   })
+  @IsOptional()
   @IsDateString()
-  endDate: string;
+  endDate?: string;
 
   @ApiPropertyOptional({
     type: () => CreateProjectStageInput,
@@ -818,6 +824,12 @@ export class ProjectResponse {
   endDate: Date;
 
   @ApiProperty({
+    example: false,
+    description: 'Whether this project has been archived.',
+  })
+  isArchived: boolean;
+
+  @ApiProperty({
     example: '2026-05-23T12:45:00.000Z',
     description: 'Timestamp when the project was created.',
   })
@@ -920,4 +932,28 @@ export class CreateProjectCommentResponse {
     description: 'The newly created project comment.',
   })
   comment: ProjectCommentResponse;
+}
+
+export class DeleteProjectResponse {
+  @ApiProperty({
+    example: 'Project deleted successfully',
+    description: 'Confirmation message returned after deleting a project.',
+  })
+  message: string;
+}
+
+export class ArchiveProjectResponse {
+  @ApiProperty({
+    example: 'Project archived successfully',
+    description: 'Confirmation message returned after archiving a project.',
+  })
+  message: string;
+}
+
+export class RestoreProjectResponse {
+  @ApiProperty({
+    example: 'Project restored successfully',
+    description: 'Confirmation message returned after restoring an archived project.',
+  })
+  message: string;
 }

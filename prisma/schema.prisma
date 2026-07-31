@@ -26,6 +26,7 @@ model User {
   role                      Role      @default(CLIENT)
   isAdmin                   Boolean   @default(false)
   isActive                  Boolean   @default(true)
+  isArchived                Boolean   @default(false)
   accountPartner            User?     @relation("StaffClients", fields: [accountPartnerId], references: [id], onDelete: SetNull)
   accountPartnerId          String?   @db.Uuid
   managedClients            User[]    @relation("StaffClients")
@@ -133,6 +134,7 @@ model Project {
   paymentStatus ProjectPaymentStatus @default(UNPAID)
   startDate     DateTime
   endDate       DateTime
+  isArchived    Boolean              @default(false)
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
@@ -141,7 +143,7 @@ model Project {
   quotes             Quote[]
   invoices           Invoice[]
   payments           Payment[]
-  client             User                      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client             User                      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId           String                    @db.Uuid
   attachment         Attachment?               @relation(fields: [attachmentId], references: [id])
   attachmentId       String?                   @db.Uuid
@@ -271,9 +273,9 @@ model Commission {
 
   quote    Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   quoteId  String @unique @db.Uuid
-  client   User   @relation("ClientCommissions", fields: [clientId], references: [id], onDelete: Restrict)
+  client   User   @relation("ClientCommissions", fields: [clientId], references: [id], onDelete: Cascade)
   clientId String @db.Uuid
-  staff    User   @relation("StaffCommissions", fields: [staffId], references: [id], onDelete: Restrict)
+  staff    User   @relation("StaffCommissions", fields: [staffId], references: [id], onDelete: Cascade)
   staffId  String @db.Uuid
 
   @@index([clientId, createdAt])
@@ -441,7 +443,7 @@ model ProjectDocumentCategory {
 
   project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId   String            @db.Uuid
-  createdBy   User              @relation("DocumentCategoryCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User              @relation("DocumentCategoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
   createdById String            @db.Uuid
   documents   ProjectDocument[]
 
@@ -458,7 +460,7 @@ model ProjectDocument {
   categoryId   String?                  @db.Uuid
   upload       Upload                   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
   uploadId     String                   @db.Uuid
-  uploadedBy   User                     @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedBy   User                     @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
   uploadedById String                   @db.Uuid
 
   @@index([projectId])

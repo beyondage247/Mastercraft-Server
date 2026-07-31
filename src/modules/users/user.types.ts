@@ -221,6 +221,12 @@ export class ClientListItemResponse {
   accountPartnerId: string | null;
 
   @ApiProperty({
+    example: false,
+    description: 'Whether this client account has been archived.',
+  })
+  isArchived: boolean;
+
+  @ApiProperty({
     example: '2026-05-21T01:35:00.000Z',
     description: 'Timestamp when the client user was created.',
   })
@@ -321,6 +327,14 @@ export class ReassignClientResponse {
   message: string;
 }
 
+export class DeleteStaffResponse {
+  @ApiProperty({
+    example: 'Staff deleted successfully',
+    description: 'Confirmation message returned after deleting a staff user.',
+  })
+  message: string;
+}
+
 export class DeactivateStaffResponse {
   @ApiProperty({
     example: 'Staff deactivated successfully',
@@ -335,6 +349,30 @@ export class ReactivateStaffResponse {
     example: 'Staff reactivated successfully',
     description:
       'Confirmation message returned after reactivating a staff user.',
+  })
+  message: string;
+}
+
+export class ArchiveClientResponse {
+  @ApiProperty({
+    example: 'Client archived successfully',
+    description: 'Confirmation message returned after archiving a client.',
+  })
+  message: string;
+}
+
+export class RestoreClientResponse {
+  @ApiProperty({
+    example: 'Client restored successfully',
+    description: 'Confirmation message returned after restoring an archived client.',
+  })
+  message: string;
+}
+
+export class DeleteClientResponse {
+  @ApiProperty({
+    example: 'Client deleted successfully',
+    description: 'Confirmation message returned after permanently deleting a client.',
   })
   message: string;
 }

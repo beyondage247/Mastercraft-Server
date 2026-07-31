@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -24,6 +25,7 @@ import { IAuthUser } from '../auth/auth.types';
 import { CommissionsService } from './commissions.service';
 import {
   CommissionResponse,
+  DeleteCommissionResponse,
   UpdateCommissionInput,
   UpdateCommissionResponse,
 } from './commissions.types';
@@ -138,5 +140,24 @@ export class CommissionsController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.commissions.updateCommission(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Delete a commission' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the commission to delete.',
+  })
+  @ApiOkResponse({
+    description: 'Permanently deletes the commission record.',
+    type: DeleteCommissionResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can delete commissions.' })
+  @ApiNotFoundResponse({ description: 'The specified commission was not found.' })
+  @Admin()
+  @Delete(':id')
+  async deleteCommission(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.commissions.deleteCommission(id);
   }
 }

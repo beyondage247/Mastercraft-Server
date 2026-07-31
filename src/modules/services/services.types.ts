@@ -532,3 +532,11 @@ export class ImportCatalogItemsBody {
   })
   file: unknown;
 }
+
+export class DeleteCatalogItemResponse {
+  @ApiProperty({
+    example: 'Catalog item deleted successfully',
+    description: 'Confirmation message returned after deleting a catalog item.',
+  })
+  message: string;
+}
