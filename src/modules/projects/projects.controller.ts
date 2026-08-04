@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -18,6 +19,7 @@ import {
   ApiOperation,
   ApiOkResponse,
   ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -30,6 +32,7 @@ import {
   CreateProjectCommentResponse,
   CreateProjectResponse,
   DeleteProjectResponse,
+  ProjectListQuery,
   ProjectResponse,
   RestoreProjectResponse,
   UpdateProjectAttachmentInput,
@@ -47,6 +50,12 @@ export class ProjectsController {
 
   @ApiOperation({ summary: 'List projects' })
   @ApiBearerAuth()
+  @ApiQuery({
+    name: 'archived',
+    required: false,
+    type: Boolean,
+    description: 'Pass true to return only archived projects. Omit or pass false for active projects.',
+  })
   @ApiOkResponse({
     description:
       'Returns all projects for administrators. Non-admin staff only receive projects for clients they manage. Clients only receive their own projects.',
@@ -61,8 +70,8 @@ export class ProjectsController {
   })
   @Auth()
   @Get()
-  async getProjectList(@AuthUser() user: IAuthUser) {
-    return this.projects.getProjectList(user);
+  async getProjectList(@AuthUser() user: IAuthUser, @Query() query: ProjectListQuery) {
+    return this.projects.getProjectList(user, query);
   }
 
   @ApiOperation({ summary: 'List projects for one client' })
@@ -72,6 +81,12 @@ export class ProjectsController {
     format: 'uuid',
     description:
       'Unique identifier for the client whose projects should be returned.',
+  })
+  @ApiQuery({
+    name: 'archived',
+    required: false,
+    type: Boolean,
+    description: 'Pass true to return only archived projects. Omit or pass false for active projects.',
   })
   @ApiOkResponse({
     description:
@@ -84,7 +99,7 @@ export class ProjectsController {
   })
   @ApiForbiddenResponse({
     description:
-      'Only administrators or staff managing the client can view that client’s projects.',
+      "Only administrators or staff managing the client can view that client's projects.",
   })
   @ApiNotFoundResponse({
     description: 'The specified client was not found.',
@@ -94,8 +109,9 @@ export class ProjectsController {
   async getClientProjects(
     @Param('clientId', new ParseUUIDPipe()) clientId: string,
     @AuthUser() user: IAuthUser,
+    @Query() query: ProjectListQuery,
   ) {
-    return this.projects.getClientProjects(clientId, user);
+    return this.projects.getClientProjects(clientId, user, query);
   }
 
   @ApiOperation({ summary: 'Add a comment to a project' })

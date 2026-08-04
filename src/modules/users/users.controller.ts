@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -9,6 +9,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import { UsersService } from './users.service';
 import {
   ArchiveClientResponse,
   ClientListItemResponse,
+  ClientListQuery,
   CreateClientInput,
   CreateClientResponse,
   CreateStaffInput,
@@ -63,6 +65,12 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Get clients' })
   @ApiBearerAuth()
+  @ApiQuery({
+    name: 'archived',
+    required: false,
+    type: Boolean,
+    description: 'Pass true to return only archived clients. Omit or pass false for active clients.',
+  })
   @ApiOkResponse({
     description:
       'Returns the clients assigned to the authenticated staff user. Administrators can view all clients.',
@@ -77,8 +85,8 @@ export class UsersController {
   })
   @Auth([Role.STAFF])
   @Get('clients')
-  async getClientList(@AuthUser() user: IAuthUser) {
-    return this.users.getClientList(user);
+  async getClientList(@AuthUser() user: IAuthUser, @Query() query: ClientListQuery) {
+    return this.users.getClientList(user, query);
   }
 
   @ApiOperation({ summary: 'Create a client account' })

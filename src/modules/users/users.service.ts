@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { hash } from 'argon2';
 import { PrismaService } from 'src/services/prisma/prisma.service';
 import {
+  ClientListQuery,
   CreateClientInput,
   CreateStaffInput,
   ReassignClientInput,
@@ -40,11 +41,11 @@ export class UsersService {
     });
   }
 
-  async getClientList(user: IAuthUser) {
+  async getClientList(user: IAuthUser, query: ClientListQuery = {}) {
     return this.prisma.user.findMany({
       where: {
         role: Role.CLIENT,
-        isArchived: false,
+        isArchived: query.archived ?? false,
         ...(user.isAdmin ? {} : { accountPartnerId: user.id }),
       },
       select: {

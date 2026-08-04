@@ -12,6 +12,7 @@ import {
   CreateProjectInput,
   CreateProjectCommentInput,
   CreateProjectStageInput,
+  ProjectListQuery,
   UpdateProjectAttachmentInput,
   UpdateProjectStageInput,
   UpdateProjectStatusInput,
@@ -187,9 +188,12 @@ export class ProjectsService {
     return { message: 'Project deleted successfully' };
   }
 
-  async getProjectList(user: IAuthUser) {
+  async getProjectList(user: IAuthUser, query: ProjectListQuery = {}) {
     return this.prisma.project.findMany({
-      where: { ...this.getProjectVisibilityWhere(user), isArchived: false },
+      where: {
+        ...this.getProjectVisibilityWhere(user),
+        isArchived: query.archived ?? false,
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -197,7 +201,7 @@ export class ProjectsService {
     });
   }
 
-  async getClientProjects(clientId: string, user: IAuthUser) {
+  async getClientProjects(clientId: string, user: IAuthUser, query: ProjectListQuery = {}) {
     const client = await this.prisma.user.findFirst({
       where: {
         id: clientId,
@@ -216,7 +220,7 @@ export class ProjectsService {
     }
 
     return this.prisma.project.findMany({
-      where: { clientId, isArchived: false },
+      where: { clientId, isArchived: query.archived ?? false },
       orderBy: {
         createdAt: 'desc',
       },

@@ -8,10 +8,11 @@ import {
   QuoteStatus,
   Role,
 } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -22,6 +23,19 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+
+export class ProjectListQuery {
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'When true, returns only archived projects. When omitted or false, returns only active (non-archived) projects.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }: { value: unknown }) => value === 'true' || value === true)
+  archived?: boolean;
+}
 
 const projectStatusDescription =
   'Current project status. Allowed values: PENDING, QUOTED, LOST, IN_PRODUCTION, COMPLETED.';
