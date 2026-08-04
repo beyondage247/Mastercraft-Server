@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role, ClientCredit } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
@@ -8,6 +9,19 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+
+export class ClientListQuery {
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'When true, returns only archived clients. When omitted or false, returns only active (non-archived) clients.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }: { value: unknown }) => value === 'true' || value === true)
+  archived?: boolean;
+}
 
 export class CreateStaffInput {
   @ApiProperty({
