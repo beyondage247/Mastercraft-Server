@@ -511,6 +511,14 @@ export class ProjectQuoteInvoiceSummaryResponse {
   status: QuoteStatus;
 
   @ApiProperty({
+    enum: ProjectPaymentStatus,
+    enumName: 'ProjectPaymentStatus',
+    example: ProjectPaymentStatus.UNPAID,
+    description: 'Current payment status of the invoice.',
+  })
+  paymentStatus: ProjectPaymentStatus;
+
+  @ApiProperty({
     example: '4289',
     description: 'Grand total as a decimal string.',
   })
@@ -578,6 +586,14 @@ export class ProjectInvoiceResponse {
     description: 'Current status stored on the invoice snapshot.',
   })
   status: QuoteStatus;
+
+  @ApiProperty({
+    enum: ProjectPaymentStatus,
+    enumName: 'ProjectPaymentStatus',
+    example: ProjectPaymentStatus.UNPAID,
+    description: 'Current payment status of the invoice.',
+  })
+  paymentStatus: ProjectPaymentStatus;
 
   @ApiPropertyOptional({
     example: 'Please confirm the cabinet finish before production starts.',

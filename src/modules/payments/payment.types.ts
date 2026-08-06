@@ -325,7 +325,15 @@ export class ClientPaymentsResponse {
   @ApiProperty({
     type: () => ClientPaymentResponse,
     isArray: true,
-    description: 'Payments recorded across the client’s projects.',
+    description: "Payments recorded across the client's projects.",
   })
   payments: ClientPaymentResponse[];
+}
+
+export class DeletePaymentResponse {
+  @ApiProperty({
+    example: 'Payment deleted successfully',
+    description: 'Confirmation message returned after permanently deleting a payment.',
+  })
+  message: string;
 }

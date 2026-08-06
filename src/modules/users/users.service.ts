@@ -336,6 +336,39 @@ export class UsersService {
     return { message: 'Client deleted successfully' };
   }
 
+  async resendClientInvitation(clientId: string, user: IAuthUser) {
+    const client = await this.prisma.user.findFirst({
+      where: { id: clientId, role: Role.CLIENT },
+      select: { id: true, name: true, email: true, phone: true, company: true, accountPartnerId: true },
+    });
+    if (!client) bad('Client not found', 404);
+
+    if (!user.isAdmin && client.accountPartnerId !== user.id) {
+      bad('You can only resend invitations for clients assigned to you', 403);
+    }
+
+    const tempPassword = generatePassword();
+    const hashedPassword = await hash(tempPassword);
+    await this.prisma.user.update({
+      where: { id: clientId },
+      data: { password: hashedPassword },
+    });
+
+    void this.mail
+      .sendNewClientMail({
+        name: client.name,
+        email: client.email,
+        tempPassword,
+        company: client.company ?? '',
+        phone: client.phone ?? '',
+      })
+      .catch((error: unknown) => {
+        this.logger.error(`Failed to resend invitation to ${client.email}`, error);
+      });
+
+    return { message: 'Invitation resent successfully' };
+  }
+
   async deleteStaff(staffId: string, user: IAuthUser) {
     if (staffId === user.id) bad('You cannot delete your own account');
 

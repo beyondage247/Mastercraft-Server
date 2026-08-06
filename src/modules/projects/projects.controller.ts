@@ -216,7 +216,7 @@ export class ProjectsController {
   @ApiOperation({
     summary: 'Update project stage progress or complete a project',
     description:
-      'Updates any of the five standard stages: MIL, Build/Assemble, Finishing, Delivery, and Install. Staff can also manually set the project status to COMPLETED after the quote workflow has moved it to IN_PRODUCTION.',
+      'Updates any of the five standard stages: MIL, Build/Assemble, Finishing, Delivery, and Install. Staff can also manually set the project status to COMPLETED at any stage.',
   })
   @ApiBearerAuth()
   @ApiParam({

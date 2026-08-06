@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -24,7 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Request } from 'express';
-import { Auth, AuthUser } from '../auth/decorators/auth.decorator';
+import { Admin, Auth, AuthUser } from '../auth/decorators/auth.decorator';
 import { IAuthUser } from '../auth/auth.types';
 import {
   AdminPaymentResponse,
@@ -32,6 +33,7 @@ import {
   ConfirmCheckoutInput,
   CreateCheckoutInput,
   CreateCheckoutResponse,
+  DeletePaymentResponse,
   ProjectPaymentsResponse,
 } from './payment.types';
 import { PaymentsService } from './payments.service';
@@ -175,6 +177,27 @@ export class PaymentsController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.payments.confirmCheckoutSession(dto, user);
+  }
+
+  @ApiOperation({ summary: 'Delete a payment' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the payment to delete.',
+  })
+  @ApiOkResponse({
+    description:
+      'Permanently deletes the payment record and recalculates the payment status for both the project and the associated invoice.',
+    type: DeletePaymentResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only administrators can delete payments.' })
+  @ApiNotFoundResponse({ description: 'The specified payment was not found.' })
+  @Admin()
+  @Delete(':id')
+  async deletePayment(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.payments.deletePayment(id);
   }
 
   @ApiOperation({

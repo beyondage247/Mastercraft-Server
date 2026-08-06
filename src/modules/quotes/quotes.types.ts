@@ -10,6 +10,7 @@ import {
   ArrayMinSize,
   IsBoolean,
   IsArray,
+  IsDateString,
   IsEnum,
   IsIn,
   IsInt,
@@ -1108,6 +1109,29 @@ export class DeleteInvoiceResponse {
   @ApiProperty({
     type: () => QuoteResponse,
     description: 'The parent quote after being reset to PENDING.',
+  })
+  quote: QuoteResponse;
+}
+
+export class ReactivateQuoteInput {
+  @ApiProperty({
+    example: '2026-10-01T00:00:00.000Z',
+    description: 'New validity date for the quote. Must be a future date.',
+  })
+  @IsDateString()
+  validUntil: string;
+}
+
+export class ReactivateQuoteResponse {
+  @ApiProperty({
+    example: 'Quote reactivated successfully',
+    description: 'Confirmation message returned after the quote is reactivated.',
+  })
+  message: string;
+
+  @ApiProperty({
+    type: () => QuoteResponse,
+    description: 'The reactivated quote with updated validity and PENDING status.',
   })
   quote: QuoteResponse;
 }

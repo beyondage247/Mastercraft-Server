@@ -171,6 +171,41 @@ export class PaymentsService {
     };
   }
 
+  async deletePayment(id: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      select: { id: true, projectId: true, invoiceId: true },
+    });
+    if (!payment) bad('Payment not found', 404);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.delete({ where: { id } });
+
+      const billing = await this.getProjectBillingTotals(tx, payment.projectId);
+      const projectPaymentStatus = this.resolvePaymentStatus(billing.amountPaid, billing.totalInvoiced);
+      await tx.project.update({
+        where: { id: payment.projectId },
+        data: { paymentStatus: projectPaymentStatus },
+      });
+
+      const [invoicePaymentAgg, inv] = await Promise.all([
+        tx.payment.aggregate({
+          where: { invoiceId: payment.invoiceId },
+          _sum: { amount: true },
+        }),
+        tx.invoice.findUnique({ where: { id: payment.invoiceId }, select: { total: true } }),
+      ]);
+      const invoiceAmountPaid = invoicePaymentAgg._sum.amount ?? new Prisma.Decimal(0);
+      const invoicePaymentStatus = this.resolvePaymentStatus(invoiceAmountPaid, inv!.total);
+      await tx.invoice.update({
+        where: { id: payment.invoiceId },
+        data: { paymentStatus: invoicePaymentStatus },
+      });
+    });
+
+    return { message: 'Payment deleted successfully' };
+  }
+
   async createCheckoutSession(dto: CreateCheckoutInput, user: IAuthUser) {
     const invoice = await this.getInvoiceForCheckout(dto.invoiceId, user);
 
@@ -388,6 +423,20 @@ export class PaymentsService {
         await tx.project.update({
           where: { id: projectId },
           data: { paymentStatus },
+        });
+
+        const [invoicePaymentAgg, inv] = await Promise.all([
+          tx.payment.aggregate({
+            where: { invoiceId },
+            _sum: { amount: true },
+          }),
+          tx.invoice.findUnique({ where: { id: invoiceId }, select: { total: true } }),
+        ]);
+        const invoiceAmountPaid = invoicePaymentAgg._sum.amount ?? new Prisma.Decimal(0);
+        const invoicePaymentStatus = this.resolvePaymentStatus(invoiceAmountPaid, inv!.total);
+        await tx.invoice.update({
+          where: { id: invoiceId },
+          data: { paymentStatus: invoicePaymentStatus },
         });
 
         await this.updateCommissionStatusAfterPayment(tx, invoiceId);

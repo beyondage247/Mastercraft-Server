@@ -85,6 +85,7 @@ const projectSelect = {
           id: true,
           invoiceId: true,
           status: true,
+          paymentStatus: true,
           total: true,
           createdAt: true,
         },
@@ -412,12 +413,6 @@ export class ProjectsService {
     if (dto.status) {
       if (dto.status !== ProjectStatus.COMPLETED) {
         bad('Only COMPLETED can be set manually on a project');
-      }
-
-      if (project.status !== ProjectStatus.IN_PRODUCTION) {
-        bad(
-          'A project can only be marked as COMPLETED after it reaches IN_PRODUCTION',
-        );
       }
 
       operations.push(
