@@ -390,3 +390,11 @@ export class DeleteClientResponse {
   })
   message: string;
 }
+
+export class ResendClientInvitationResponse {
+  @ApiProperty({
+    example: 'Invitation resent successfully',
+    description: 'Confirmation message returned after resending the onboarding invitation.',
+  })
+  message: string;
+}

@@ -28,6 +28,7 @@ import {
   ReactivateStaffResponse,
   ReassignClientInput,
   ReassignClientResponse,
+  ResendClientInvitationResponse,
   RestoreClientResponse,
   StaffListItemResponse,
   UpdateClientInput,
@@ -199,6 +200,30 @@ export class UsersController {
   @Delete('clients/:id')
   async deleteClient(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.users.deleteClient(id);
+  }
+
+  @ApiOperation({ summary: 'Resend onboarding invitation to a client' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the client to resend the invitation to.',
+  })
+  @ApiOkResponse({
+    description:
+      'Generates a new temporary password for the client and resends the onboarding email with the new credentials.',
+    type: ResendClientInvitationResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only staff users can resend client invitations. Non-admin staff can only resend to their own clients.' })
+  @ApiNotFoundResponse({ description: 'The specified client was not found.' })
+  @Auth([Role.STAFF])
+  @Post('clients/:id/resend-invitation')
+  async resendClientInvitation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.users.resendClientInvitation(id, user);
   }
 
   @ApiOperation({ summary: 'Reassign a client to another staff user' })

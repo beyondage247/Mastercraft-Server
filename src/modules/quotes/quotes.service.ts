@@ -32,6 +32,7 @@ import {
   CreateQuoteInput,
   QuotePaymentScheduleInput,
   QuoteLineItemInput,
+  ReactivateQuoteInput,
   RespondToQuoteInput,
   UpdateQuoteInput,
 } from './quotes.types';
@@ -333,6 +334,12 @@ export class QuotesService {
   });
 
   async getQuoteList(user: IAuthUser) {
+    const ids = await this.prisma.quote.findMany({
+      where: this.getQuoteVisibilityWhere(user),
+      select: { id: true },
+    });
+    await this.expireStaleQuotes(ids.map((q) => q.id));
+
     const quotes = await this.prisma.quote.findMany({
       where: this.getQuoteVisibilityWhere(user),
       orderBy: {
@@ -345,6 +352,8 @@ export class QuotesService {
   }
 
   async getQuote(id: string, user: IAuthUser) {
+    await this.expireStaleQuotes([id]);
+
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
@@ -972,6 +981,10 @@ export class QuotesService {
       bad('This quote has already been approved');
     }
 
+    if (quote.status === QuoteStatus.EXPIRED) {
+      bad('This quote has expired and can no longer be responded to');
+    }
+
     if (quote.status === QuoteStatus.REJECTED) {
       bad('This quote must be edited by staff before it can be reviewed again');
     }
@@ -1263,6 +1276,56 @@ export class QuotesService {
     }
 
     return project;
+  }
+
+  async reactivateQuote(id: string, dto: ReactivateQuoteInput, user: IAuthUser) {
+    const quote = await this.getQuoteForStaff(id, user);
+
+    if (quote.status !== QuoteStatus.EXPIRED) {
+      bad('Only expired quotes can be reactivated');
+    }
+
+    const newValidUntil = new Date(dto.validUntil);
+    if (newValidUntil <= new Date()) {
+      bad('New validity date must be in the future');
+    }
+
+    const [updated, project] = await Promise.all([
+      this.prisma.quote.update({
+        where: { id },
+        data: { status: QuoteStatus.PENDING, validUntil: newValidUntil },
+        select: quoteSelect,
+      }),
+      this.prisma.project.findUnique({
+        where: { id: quote.project.id },
+        select: quoteProjectSelect,
+      }),
+    ]);
+
+    if (project) {
+      void this.mail
+        .sendQuoteCreatedMail(this.buildQuoteCreatedMailContext(project, updated))
+        .catch((error: unknown) => {
+          this.logger.error(
+            `Failed to send reactivation notification for quote ${id}`,
+            error,
+          );
+        });
+    }
+
+    return { message: 'Quote reactivated successfully', quote: this.serializeQuote(updated) };
+  }
+
+  private async expireStaleQuotes(quoteIds: string[]) {
+    if (!quoteIds.length) return;
+    await this.prisma.quote.updateMany({
+      where: {
+        id: { in: quoteIds },
+        validUntil: { lt: new Date() },
+        status: { notIn: [QuoteStatus.APPROVED, QuoteStatus.EXPIRED, QuoteStatus.REJECTED] },
+      },
+      data: { status: QuoteStatus.EXPIRED },
+    });
   }
 
   private async getQuoteForStaff(id: string, user: IAuthUser) {

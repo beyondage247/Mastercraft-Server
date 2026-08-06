@@ -63,6 +63,7 @@ enum QuoteStatus {
   APPROVED
   REJECTED
   IN_REVIEW
+  EXPIRED
 }
 
 enum ProjectStageType {
@@ -346,6 +347,7 @@ model Invoice {
   discount      Decimal     @default(0)
   shippingFee   Decimal     @default(0)
   total         Decimal
+  paymentStatus ProjectPaymentStatus @default(UNPAID)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 

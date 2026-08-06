@@ -34,6 +34,8 @@ import {
   DeleteInvoiceResponse,
   DeleteQuoteResponse,
   QuoteResponse,
+  ReactivateQuoteInput,
+  ReactivateQuoteResponse,
   RespondToQuoteInput,
   RespondToQuoteResponse,
   UpdateQuoteInput,
@@ -389,5 +391,34 @@ export class QuotesController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.quotes.respondToQuote(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Reactivate an expired quote' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the expired quote to reactivate.',
+  })
+  @ApiBody({ type: ReactivateQuoteInput })
+  @ApiOkResponse({
+    description:
+      'Resets the expired quote status to PENDING with the new validity date and resends the quote email to the client.',
+    type: ReactivateQuoteResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The quote is not expired, or the new validity date is not in the future.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only staff can reactivate quotes.' })
+  @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
+  @Auth([Role.STAFF])
+  @Patch(':id/reactivate')
+  async reactivateQuote(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: ReactivateQuoteInput,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.quotes.reactivateQuote(id, dto, user);
   }
 }
