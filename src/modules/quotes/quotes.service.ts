@@ -965,6 +965,8 @@ export class QuotesService {
       bad('Only clients can respond to quotes', 403);
     }
 
+    await this.expireStaleQuotes([id]);
+
     const quote = await this.prisma.quote.findFirst({
       where: {
         id,
