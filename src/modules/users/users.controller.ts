@@ -118,6 +118,29 @@ export class UsersController {
     return this.users.createClient(dto, user);
   }
 
+  @ApiOperation({ summary: 'Reassign a client to another staff user' })
+  @ApiBearerAuth()
+  @ApiBody({ type: ReassignClientInput })
+  @ApiOkResponse({
+    description:
+      'Moves a client from their current staff account partner to another staff user.',
+    type: ReassignClientResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The request body is invalid or the client/staff was not found.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid bearer token is required.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only administrators can reassign clients.',
+  })
+  @Admin()
+  @Patch('clients/reassign')
+  async reassignClient(@Body() dto: ReassignClientInput) {
+    return this.users.reassignClient(dto);
+  }
+
   @ApiOperation({ summary: 'Update a client account' })
   @ApiBearerAuth()
   @ApiParam({ name: 'id', format: 'uuid', description: 'Unique identifier for the client to update.' })
@@ -224,29 +247,6 @@ export class UsersController {
     @AuthUser() user: IAuthUser,
   ) {
     return this.users.resendClientInvitation(id, user);
-  }
-
-  @ApiOperation({ summary: 'Reassign a client to another staff user' })
-  @ApiBearerAuth()
-  @ApiBody({ type: ReassignClientInput })
-  @ApiOkResponse({
-    description:
-      'Moves a client from their current staff account partner to another staff user.',
-    type: ReassignClientResponse,
-  })
-  @ApiBadRequestResponse({
-    description: 'The request body is invalid or the client/staff was not found.',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'A valid bearer token is required.',
-  })
-  @ApiForbiddenResponse({
-    description: 'Only administrators can reassign clients.',
-  })
-  @Admin()
-  @Patch('clients/reassign')
-  async reassignClient(@Body() dto: ReassignClientInput) {
-    return this.users.reassignClient(dto);
   }
 
   @ApiOperation({ summary: 'Create a staff account' })
