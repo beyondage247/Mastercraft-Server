@@ -1091,6 +1091,20 @@ export class RespondToQuoteResponse {
   quote: QuoteResponse;
 }
 
+export class ApproveQuoteResponse {
+  @ApiProperty({
+    example: 'Quote approved successfully',
+    description: 'Confirmation message returned after staff approves the quote.',
+  })
+  message: string;
+
+  @ApiProperty({
+    type: () => QuoteResponse,
+    description: 'The approved quote with the created invoice.',
+  })
+  quote: QuoteResponse;
+}
+
 export class DeleteQuoteResponse {
   @ApiProperty({
     example: 'Quote deleted successfully',

@@ -29,6 +29,7 @@ import { Admin, Auth, AuthUser } from '../auth/decorators/auth.decorator';
 import { IAuthUser } from '../auth/auth.types';
 import { QuotesService } from './quotes.service';
 import {
+  ApproveQuoteResponse,
   CreateQuoteInput,
   CreateQuoteResponse,
   DeleteInvoiceResponse,
@@ -413,6 +414,33 @@ export class QuotesController {
   @ApiForbiddenResponse({ description: 'Only staff can reactivate quotes.' })
   @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
   @Auth([Role.STAFF])
+  @ApiOperation({ summary: 'Approve a quote (staff)' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the quote to approve.',
+  })
+  @ApiOkResponse({
+    description:
+      'Approves the quote on behalf of the client, creates the invoice, moves the project to IN_PRODUCTION, and sends invoice notification emails.',
+    type: ApproveQuoteResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The quote is already approved, expired, or has no staff user assigned for commission.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only staff can approve quotes.' })
+  @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
+  @Auth([Role.STAFF])
+  @Patch(':id/approve')
+  async approveQuote(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.quotes.approveQuote(id, user);
+  }
+
   @Patch(':id/reactivate')
   async reactivateQuote(
     @Param('id', new ParseUUIDPipe()) id: string,
