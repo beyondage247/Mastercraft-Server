@@ -1280,6 +1280,149 @@ export class QuotesService {
     return project;
   }
 
+  async approveQuote(id: string, user: IAuthUser) {
+    await this.getQuoteForStaff(id, user);
+    await this.expireStaleQuotes([id]);
+
+    const quote = await this.prisma.quote.findUnique({
+      where: { id },
+      select: quoteApprovalSelect,
+    });
+
+    if (!quote) bad('Quote not found', 404);
+
+    if (quote.status === QuoteStatus.APPROVED) {
+      bad('This quote has already been approved');
+    }
+
+    if (quote.status === QuoteStatus.EXPIRED) {
+      bad('This quote has expired and cannot be approved. Reactivate it first.');
+    }
+
+    if (
+      !quote.project.client.accountPartnerId &&
+      !quote.commission?.staffId
+    ) {
+      bad(
+        'This quote cannot be approved because the client has no assigned staff user for commission',
+      );
+    }
+
+    let createdInvoiceId: string | null = null;
+    let createdInvoiceDbId: string | null = null;
+
+    const updatedQuote = await this.prisma.$transaction(async (tx) => {
+      const invoiceId = await this.invoiceIdGenerator.nextId(tx);
+      const createdInvoice = await tx.invoice.create({
+        data: {
+          invoiceId,
+          quoteId: quote.id,
+          projectId: quote.projectId,
+          name: quote.name,
+          status: QuoteStatus.APPROVED,
+          message: quote.message,
+          clientComment: null,
+          dateIssued: quote.dateIssued,
+          validUntil: quote.validUntil,
+          subtotal: quote.subtotal,
+          tax: quote.tax ?? new Prisma.Decimal(0),
+          taxAmount: quote.taxAmount,
+          discount: quote.discount,
+          shippingFee: quote.shippingFee,
+          total: quote.total,
+          lineItems: {
+            create: quote.lineItems.map((lineItem) => ({
+              productName: lineItem.productName,
+              ourPrice: lineItem.ourPrice,
+              quantity: lineItem.quantity,
+              tax: lineItem.tax,
+            })),
+          },
+        },
+      });
+      createdInvoiceId = createdInvoice.invoiceId;
+      createdInvoiceDbId = createdInvoice.id;
+
+      const billing = await this.getProjectBillingTotals(tx, quote.projectId);
+      await tx.project.update({
+        where: { id: quote.projectId },
+        data: {
+          status: ProjectStatus.IN_PRODUCTION,
+          paymentStatus: this.resolveProjectPaymentStatus(
+            billing.amountPaid,
+            billing.totalInvoiced,
+          ),
+        },
+      });
+
+      await this.upsertQuoteCommission(tx, {
+        quoteId: quote.id,
+        clientId: quote.project.client.id,
+        staffId:
+          quote.project.client.accountPartnerId ?? quote.commission?.staffId,
+        total: quote.total,
+        taxAmount: quote.taxAmount,
+        percentageCommission:
+          quote.commission?.percentageCommission ?? new Prisma.Decimal(0),
+        status: CommissionStatus.INVOICE_COMMISSION,
+      });
+
+      return tx.quote.update({
+        where: { id },
+        data: { status: QuoteStatus.APPROVED },
+        select: quoteSelect,
+      });
+    });
+
+    if (createdInvoiceId && createdInvoiceDbId) {
+      const invoiceMailContext = this.buildInvoiceCreatedMailContext(
+        quote,
+        createdInvoiceDbId,
+        createdInvoiceId,
+        null,
+      );
+      const notificationRecipients = this.getUniqueRecipients([
+        {
+          id: quote.project.client.id,
+          name: quote.project.client.name,
+          email: quote.project.client.email,
+        },
+        quote.project.client.accountPartner
+          ? {
+              id: quote.project.client.accountPartner.id,
+              name: quote.project.client.accountPartner.name,
+              email: quote.project.client.accountPartner.email,
+            }
+          : null,
+        ...(await this.getAdminRecipients([
+          quote.project.client.accountPartnerId,
+        ])),
+      ]);
+
+      if (notificationRecipients.length) {
+        void Promise.all(
+          notificationRecipients.map((recipient) =>
+            this.mail.sendInvoiceCreatedMail({
+              ...invoiceMailContext,
+              recipientName: recipient.name,
+              recipientEmail: recipient.email,
+            }),
+          ),
+        ).catch((error: unknown) => {
+          this.logger.error(
+            `Failed to send invoice creation notification for quote ${id}`,
+            error,
+          );
+        });
+      }
+    }
+
+    return {
+      message: 'Quote approved successfully',
+      quote: this.serializeQuote(updatedQuote),
+    };
+  }
+
   async reactivateQuote(id: string, dto: ReactivateQuoteInput, user: IAuthUser) {
     const quote = await this.getQuoteForStaff(id, user);
 
