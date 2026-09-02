@@ -1820,8 +1820,8 @@ export class QuotesService {
       'paymentSchedule.totalAmount',
     );
 
-    if (totalAmount.lessThanOrEqualTo(0)) {
-      bad('paymentSchedule.totalAmount must be greater than 0');
+    if (totalAmount.lessThan(0)) {
+      bad('paymentSchedule.totalAmount cannot be negative');
     }
 
     this.assertDecimalClose(
@@ -1990,8 +1990,8 @@ export class QuotesService {
           'paymentSchedule.balance.percentage',
         );
 
-        if (balanceAmount.lessThanOrEqualTo(0)) {
-          bad('paymentSchedule.balance.amount must be greater than 0');
+        if (balanceAmount.lessThan(0)) {
+          bad('paymentSchedule.balance.amount cannot be negative');
         }
 
         this.assertDecimalClose(
@@ -2104,16 +2104,16 @@ export class QuotesService {
     }
 
     const amount = this.toDecimal(payment.amount, `${fieldPath}.amount`);
-    if (amount.lessThanOrEqualTo(0)) {
-      bad(`${fieldPath}.amount must be greater than 0`);
+    if (amount.lessThan(0)) {
+      bad(`${fieldPath}.amount cannot be negative`);
     }
 
     const percentage = this.toDecimal(
       payment.percentage,
       `${fieldPath}.percentage`,
     );
-    if (percentage.lessThanOrEqualTo(0)) {
-      bad(`${fieldPath}.percentage must be greater than 0`);
+    if (percentage.lessThan(0)) {
+      bad(`${fieldPath}.percentage cannot be negative`);
     }
 
     const { dateType, dueDate } = this.toScheduleDate(

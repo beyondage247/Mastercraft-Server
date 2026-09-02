@@ -91,7 +91,7 @@ export class QuotePaymentSchedulePaymentInput {
     description: 'Amount due for this payment.',
   })
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
   amount: number;
 
   @ApiProperty({
@@ -124,7 +124,7 @@ export class QuotePaymentScheduleFullPaymentInput {
     description: 'Full amount due.',
   })
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
   amount: number;
 
   @ApiProperty({
@@ -172,7 +172,7 @@ export class QuotePaymentScheduleDepositInput {
     description: 'Deposit amount due.',
   })
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
   amount: number;
 
   @ApiProperty({
@@ -198,7 +198,7 @@ export class QuotePaymentScheduleBalanceInput {
     description: 'Remaining balance amount due after the deposit.',
   })
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
   amount: number;
 
   @ApiProperty({
@@ -272,7 +272,7 @@ export class QuotePaymentScheduleInput {
       'Total amount covered by this payment schedule. This must match the quote total.',
   })
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
   totalAmount: number;
 
   @ApiPropertyOptional({
