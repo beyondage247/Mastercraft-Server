@@ -211,7 +211,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 14px 0 10px;
+      padding: 14px 12px 10px;
       text-align: left;
     }
 
@@ -229,7 +229,7 @@
     }
 
     .items-table tbody td {
-      padding: 11px 0;
+      padding: 11px 12px;
       color: var(--dark);
       vertical-align: top;
     }
@@ -445,12 +445,15 @@
 
   <div class="summary-row">
     <div class="summary-cell">
-      <div class="label">Customer</div>
+      <div class="label">Bill To</div>
       <div class="value">
         <strong>{{customerName}}</strong><br/>
         {{#if customerCompany}}{{customerCompany}}<br/>{{/if}}
         {{customerEmail}}<br/>
         {{#if customerPhone}}{{customerPhone}}<br/>{{/if}}
+        {{#if customerBillingAddress}}{{customerBillingAddress}}<br/>{{/if}}
+        {{#if customerBillingCity}}{{customerBillingCity}}{{#if customerBillingState}}, {{customerBillingState}}{{/if}}{{#if customerBillingZip}} {{customerBillingZip}}{{/if}}<br/>{{/if}}
+        {{#if customerBillingCountry}}{{customerBillingCountry}}<br/>{{/if}}
         {{#if customerLocation}}{{customerLocation}}{{/if}}
       </div>
     </div>

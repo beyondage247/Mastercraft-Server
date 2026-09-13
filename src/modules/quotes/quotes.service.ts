@@ -103,6 +103,12 @@ const quoteSelect = {
       },
     },
   },
+  category: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
   invoices: {
     orderBy: {
       createdAt: 'desc',
@@ -198,6 +204,11 @@ const quoteDocumentClientSelect = {
   phone: true,
   company: true,
   additionalEmail: true,
+  billingAddress: true,
+  billingCity: true,
+  billingState: true,
+  billingZip: true,
+  billingCountry: true,
 } satisfies Prisma.UserSelect;
 
 const quoteDocumentSelect = {
@@ -455,6 +466,11 @@ export class QuotesService {
       clientEmail: quote.project.client.email,
       clientPhone: quote.project.client.phone ?? null,
       clientCompany: quote.project.client.company ?? null,
+      clientBillingAddress: quote.project.client.billingAddress ?? null,
+      clientBillingCity: quote.project.client.billingCity ?? null,
+      clientBillingState: quote.project.client.billingState ?? null,
+      clientBillingZip: quote.project.client.billingZip ?? null,
+      clientBillingCountry: quote.project.client.billingCountry ?? null,
       lineItems: quote.lineItems.map((lineItem) => {
         const lineTotal = lineItem.ourPrice?.mul(lineItem.quantity) ?? null;
         const lineTaxAmount =
@@ -502,6 +518,11 @@ export class QuotesService {
       clientEmail: invoice.project.client.email,
       clientPhone: invoice.project.client.phone ?? null,
       clientCompany: invoice.project.client.company ?? null,
+      clientBillingAddress: invoice.project.client.billingAddress ?? null,
+      clientBillingCity: invoice.project.client.billingCity ?? null,
+      clientBillingState: invoice.project.client.billingState ?? null,
+      clientBillingZip: invoice.project.client.billingZip ?? null,
+      clientBillingCountry: invoice.project.client.billingCountry ?? null,
       lineItems: invoice.lineItems.map((lineItem) => {
         const lineTotal = lineItem.ourPrice?.mul(lineItem.quantity) ?? null;
         const lineTaxAmount =
@@ -600,6 +621,7 @@ export class QuotesService {
           discount,
           shippingFee,
           total: quoteTotal,
+          categoryId: dto.categoryId ?? null,
           lineItems: {
             create: lineItems.map((item) => ({
               productName: item.productName,
@@ -845,6 +867,13 @@ export class QuotesService {
             nextTotal,
           )
         : null;
+
+    if (dto.categoryId !== undefined) {
+      data.category =
+        dto.categoryId === null
+          ? { disconnect: true }
+          : { connect: { id: dto.categoryId } };
+    }
 
     if (!Object.keys(data).length && !lineItems && !paymentSchedule) {
       bad('At least one update field is required');
@@ -1419,6 +1448,44 @@ export class QuotesService {
 
     return {
       message: 'Quote approved successfully',
+      quote: this.serializeQuote(updatedQuote),
+    };
+  }
+
+  async declineQuote(id: string, user: IAuthUser) {
+    await this.getQuoteForStaff(id, user);
+    await this.expireStaleQuotes([id]);
+
+    const quote = await this.prisma.quote.findUnique({
+      where: { id },
+      select: quoteSelect,
+    });
+
+    if (!quote) bad('Quote not found', 404);
+
+    if (quote.status === QuoteStatus.REJECTED) {
+      bad('This quote has already been declined');
+    }
+
+    if (quote.status === QuoteStatus.APPROVED) {
+      bad('An approved quote cannot be declined');
+    }
+
+    const updatedQuote = await this.prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: quote.project.id },
+        data: { status: ProjectStatus.LOST },
+      });
+
+      return tx.quote.update({
+        where: { id },
+        data: { status: QuoteStatus.REJECTED },
+        select: quoteSelect,
+      });
+    });
+
+    return {
+      message: 'Quote declined successfully',
       quote: this.serializeQuote(updatedQuote),
     };
   }
@@ -2539,6 +2606,7 @@ export class QuotesService {
           lineTaxAmount: lineTaxAmount?.toString() ?? null,
         };
       }),
+      category: quote.category ?? null,
       paymentSchedule: this.serializePaymentSchedule(quote.paymentSchedule),
       invoices: quote.invoices.map((invoice) => ({
         id: invoice.id,

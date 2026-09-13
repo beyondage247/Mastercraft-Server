@@ -57,6 +57,11 @@ export class UsersService {
         additionalContact: true,
         additionalEmail: true,
         clientCredit: true,
+        billingAddress: true,
+        billingCity: true,
+        billingState: true,
+        billingZip: true,
+        billingCountry: true,
         accountPartnerId: true,
         isArchived: true,
         createdAt: true,
@@ -185,6 +190,11 @@ export class UsersService {
         ...(dto.additionalContact !== undefined && { additionalContact: dto.additionalContact }),
         ...(dto.additionalEmail !== undefined && { additionalEmail: dto.additionalEmail }),
         ...(dto.clientCredit !== undefined && { clientCredit: dto.clientCredit }),
+        ...(dto.billingAddress !== undefined && { billingAddress: dto.billingAddress }),
+        ...(dto.billingCity !== undefined && { billingCity: dto.billingCity }),
+        ...(dto.billingState !== undefined && { billingState: dto.billingState }),
+        ...(dto.billingZip !== undefined && { billingZip: dto.billingZip }),
+        ...(dto.billingCountry !== undefined && { billingCountry: dto.billingCountry }),
       },
     });
 

@@ -32,6 +32,7 @@ import {
   ApproveQuoteResponse,
   CreateQuoteInput,
   CreateQuoteResponse,
+  DeclineQuoteResponse,
   DeleteInvoiceResponse,
   DeleteQuoteResponse,
   QuoteResponse,
@@ -394,26 +395,6 @@ export class QuotesController {
     return this.quotes.respondToQuote(id, dto, user);
   }
 
-  @ApiOperation({ summary: 'Reactivate an expired quote' })
-  @ApiBearerAuth()
-  @ApiParam({
-    name: 'id',
-    format: 'uuid',
-    description: 'Unique identifier for the expired quote to reactivate.',
-  })
-  @ApiBody({ type: ReactivateQuoteInput })
-  @ApiOkResponse({
-    description:
-      'Resets the expired quote status to PENDING with the new validity date and resends the quote email to the client.',
-    type: ReactivateQuoteResponse,
-  })
-  @ApiBadRequestResponse({
-    description: 'The quote is not expired, or the new validity date is not in the future.',
-  })
-  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
-  @ApiForbiddenResponse({ description: 'Only staff can reactivate quotes.' })
-  @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
-  @Auth([Role.STAFF])
   @ApiOperation({ summary: 'Approve a quote (staff)' })
   @ApiBearerAuth()
   @ApiParam({
@@ -441,6 +422,53 @@ export class QuotesController {
     return this.quotes.approveQuote(id, user);
   }
 
+  @ApiOperation({ summary: 'Decline a quote (staff)' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the quote to decline.',
+  })
+  @ApiOkResponse({
+    description:
+      'Sets the quote status to REJECTED and the project status to LOST. Used to record lost business.',
+    type: DeclineQuoteResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The quote is already declined or has been approved.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only staff can decline quotes.' })
+  @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
+  @Auth([Role.STAFF])
+  @Patch(':id/decline')
+  async declineQuote(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AuthUser() user: IAuthUser,
+  ) {
+    return this.quotes.declineQuote(id, user);
+  }
+
+  @ApiOperation({ summary: 'Reactivate an expired quote' })
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'Unique identifier for the expired quote to reactivate.',
+  })
+  @ApiBody({ type: ReactivateQuoteInput })
+  @ApiOkResponse({
+    description:
+      'Resets the expired quote status to PENDING with the new validity date and resends the quote email to the client.',
+    type: ReactivateQuoteResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'The quote is not expired, or the new validity date is not in the future.',
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid bearer token is required.' })
+  @ApiForbiddenResponse({ description: 'Only staff can reactivate quotes.' })
+  @ApiNotFoundResponse({ description: 'The specified quote was not found.' })
+  @Auth([Role.STAFF])
   @Patch(':id/reactivate')
   async reactivateQuote(
     @Param('id', new ParseUUIDPipe()) id: string,

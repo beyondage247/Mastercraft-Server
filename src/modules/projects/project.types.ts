@@ -16,6 +16,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -42,22 +43,22 @@ const projectStatusDescription =
 
 export class CreateProjectStageInput {
   @ApiProperty({
-    example: 24,
-    description: 'Budgeted hours allocated to the stage.',
+    example: 3,
+    description: 'Budgeted days allocated to the stage. Supports half-days (e.g. 0.5, 1.5).',
   })
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  hoursBudgeted: number;
+  daysBudgeted: number;
 
   @ApiPropertyOptional({
     example: 0,
-    description: 'Hours already spent on the stage.',
+    description: 'Days already spent on the stage. Supports half-days.',
     default: 0,
   })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  hoursSpent?: number;
+  daysSpent?: number;
 
   @ApiPropertyOptional({
     example: 0,
@@ -188,22 +189,22 @@ export class CreateProjectInput {
 
 export class UpdateProjectStageInput {
   @ApiPropertyOptional({
-    example: 32,
-    description: 'Updated budgeted hours allocated to the stage.',
+    example: 3,
+    description: 'Updated budgeted days allocated to the stage. Supports half-days (e.g. 0.5, 1.5).',
   })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  hoursBudgeted?: number;
+  daysBudgeted?: number;
 
   @ApiPropertyOptional({
-    example: 10,
-    description: 'Updated hours already spent on the stage.',
+    example: 1,
+    description: 'Updated days already spent on the stage. Supports half-days.',
   })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  hoursSpent?: number;
+  daysSpent?: number;
 
   @ApiPropertyOptional({
     example: 45,
@@ -339,16 +340,16 @@ export class ProjectStageResponse {
   stage: ProjectStageType;
 
   @ApiProperty({
-    example: 24,
-    description: 'Budgeted hours allocated to the stage.',
+    example: 3,
+    description: 'Budgeted days allocated to the stage. Supports half-days.',
   })
-  hoursBudgeted: number;
+  daysBudgeted: number;
 
   @ApiProperty({
-    example: 4,
-    description: 'Hours already spent on the stage.',
+    example: 0.5,
+    description: 'Days already spent on the stage. Supports half-days.',
   })
-  hoursSpent: number;
+  daysSpent: number;
 
   @ApiProperty({
     example: 20,

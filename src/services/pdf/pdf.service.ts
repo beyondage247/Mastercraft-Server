@@ -104,6 +104,11 @@ interface QuoteTemplateData {
   customerEmail: string;
   customerPhone: string | null;
   customerLocation: string | null;
+  customerBillingAddress: string | null;
+  customerBillingCity: string | null;
+  customerBillingState: string | null;
+  customerBillingZip: string | null;
+  customerBillingCountry: string | null;
   generatedOn: string;
   total: string;
   summaryCards: QuoteTemplateSummaryCard[];
@@ -138,6 +143,11 @@ interface InvoiceTemplateData {
   customerEmail: string;
   customerPhone: string | null;
   customerLocation: string | null;
+  customerBillingAddress: string | null;
+  customerBillingCity: string | null;
+  customerBillingState: string | null;
+  customerBillingZip: string | null;
+  customerBillingCountry: string | null;
   generatedOn: string;
   total: string;
   summaryCards: QuoteTemplateSummaryCard[];
@@ -310,6 +320,11 @@ export class PdfService {
       customerEmail: data.clientEmail,
       customerPhone: data.clientPhone,
       customerLocation: data.projectLocation,
+      customerBillingAddress: data.clientBillingAddress,
+      customerBillingCity: data.clientBillingCity,
+      customerBillingState: data.clientBillingState,
+      customerBillingZip: data.clientBillingZip,
+      customerBillingCountry: data.clientBillingCountry,
       generatedOn: this.formatCurrentDate(),
       total: data.total,
       summaryCards,
@@ -365,6 +380,11 @@ export class PdfService {
       customerEmail: data.clientEmail,
       customerPhone: data.clientPhone,
       customerLocation: data.projectLocation,
+      customerBillingAddress: data.clientBillingAddress,
+      customerBillingCity: data.clientBillingCity,
+      customerBillingState: data.clientBillingState,
+      customerBillingZip: data.clientBillingZip,
+      customerBillingCountry: data.clientBillingCountry,
       generatedOn: this.formatCurrentDate(),
       total: data.total,
       summaryCards: this.buildInvoiceSummaryCards(data),

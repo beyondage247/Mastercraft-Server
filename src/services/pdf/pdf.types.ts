@@ -31,6 +31,11 @@ interface DocumentPdfDataBase {
   clientEmail: string;
   clientPhone: string | null;
   clientCompany: string | null;
+  clientBillingAddress: string | null;
+  clientBillingCity: string | null;
+  clientBillingState: string | null;
+  clientBillingZip: string | null;
+  clientBillingCountry: string | null;
   lineItems: PdfDocumentLineItem[];
   subtotal: string;
   taxLabel: string;

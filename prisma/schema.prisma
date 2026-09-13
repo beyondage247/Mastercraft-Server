@@ -37,6 +37,11 @@ model User {
   company            String?
   additionalContact  String?
   additionalEmail    String?
+  billingAddress     String?
+  billingCity        String?
+  billingState       String?
+  billingZip         String?
+  billingCountry     String?
   clientCredit       ClientCredit?
   projects           Project[]
   uploads            Upload[]
@@ -158,8 +163,8 @@ model ProjectStage {
   id            String           @id @default(uuid()) @db.Uuid
   projectId     String           @db.Uuid
   stage         ProjectStageType
-  hoursBudgeted Int
-  hoursSpent    Int              @default(0)
+  daysBudgeted  Float            @default(0)
+  daysSpent     Float            @default(0)
   progress      Int              @default(0)
   startDate     DateTime
   createdAt     DateTime         @default(now())
@@ -231,6 +236,14 @@ model InventoryItem {
   updatedAt            DateTime             @updatedAt
 }
 
+model QuoteCategory {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  quotes    Quote[]
+  invoices  Invoice[]
+}
+
 model Quote {
   id            String      @id @default(uuid()) @db.Uuid
   name          String
@@ -251,6 +264,8 @@ model Quote {
 
   project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId       String                @db.Uuid
+  category        QuoteCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId      String?               @db.Uuid
   lineItems       QuoteLineItem[]
   paymentSchedule QuotePaymentSchedule?
   invoices        Invoice[]
@@ -258,6 +273,7 @@ model Quote {
 
   @@index([projectId])
   @@index([status])
+  @@index([categoryId])
 }
 
 model Commission {
@@ -351,16 +367,19 @@ model Invoice {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  quote     Quote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  quoteId   String            @db.Uuid
-  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String            @db.Uuid
-  lineItems InvoiceLineItem[]
-  payments  Payment[]
+  quote      Quote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quoteId    String            @db.Uuid
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String            @db.Uuid
+  category   QuoteCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId String?           @db.Uuid
+  lineItems  InvoiceLineItem[]
+  payments   Payment[]
 
   @@index([quoteId])
   @@index([projectId])
   @@index([status])
+  @@index([categoryId])
 }
 
 model InvoiceLineItem {

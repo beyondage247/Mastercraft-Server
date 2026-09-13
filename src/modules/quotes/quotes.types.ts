@@ -432,6 +432,14 @@ export class CreateQuoteInput {
   paymentSchedule: QuotePaymentScheduleInput;
 
   @ApiPropertyOptional({
+    example: '3aa91264-c8dc-4fc7-8532-a65153a36429',
+    description: 'Optional category to assign to this quote.',
+  })
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
     example: false,
     description:
       'When true, the quote is immediately approved and an invoice is created in a single step. The client does not need to approve the quote and can proceed directly to payment.',
@@ -577,6 +585,15 @@ export class UpdateQuoteInput {
   @ValidateNested()
   @Type(() => QuotePaymentScheduleInput)
   paymentSchedule?: QuotePaymentScheduleInput;
+
+  @ApiPropertyOptional({
+    example: '3aa91264-c8dc-4fc7-8532-a65153a36429',
+    description: 'Category to assign to this quote. Pass null to clear the existing category.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string | null;
 }
 
 export class RespondToQuoteInput {
@@ -918,6 +935,14 @@ export class QuotePaymentScheduleResponse {
   fullPayment?: QuotePaymentScheduleFullPaymentResponse | null;
 }
 
+export class QuoteCategoryResponse {
+  @ApiProperty({ example: '3aa91264-c8dc-4fc7-8532-a65153a36429', description: 'Category id.' })
+  id: string;
+
+  @ApiProperty({ example: 'Residential', description: 'Category name.' })
+  name: string;
+}
+
 export class QuoteResponse {
   @ApiProperty({
     example: '8f1e52bc-5a3c-4f5b-8f80-51f0b4649224',
@@ -1028,6 +1053,13 @@ export class QuoteResponse {
   })
   paymentSchedule: QuotePaymentScheduleResponse | null;
 
+  @ApiPropertyOptional({
+    type: () => QuoteCategoryResponse,
+    description: 'Category assigned to this quote.',
+    nullable: true,
+  })
+  category: QuoteCategoryResponse | null;
+
   @ApiProperty({
     type: () => QuoteInvoiceResponse,
     isArray: true,
@@ -1101,6 +1133,20 @@ export class ApproveQuoteResponse {
   @ApiProperty({
     type: () => QuoteResponse,
     description: 'The approved quote with the created invoice.',
+  })
+  quote: QuoteResponse;
+}
+
+export class DeclineQuoteResponse {
+  @ApiProperty({
+    example: 'Quote declined successfully',
+    description: 'Confirmation message returned after staff declines the quote.',
+  })
+  message: string;
+
+  @ApiProperty({
+    type: () => QuoteResponse,
+    description: 'The declined quote with REJECTED status.',
   })
   quote: QuoteResponse;
 }

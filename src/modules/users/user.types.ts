@@ -160,6 +160,31 @@ export class CreateClientInput {
   })
   @IsEnum(ClientCredit)
   clientCredit: ClientCredit;
+
+  @ApiPropertyOptional({ example: '123 Main St', description: 'Billing street address.' })
+  @IsOptional()
+  @IsString()
+  billingAddress?: string;
+
+  @ApiPropertyOptional({ example: 'New York', description: 'Billing city.' })
+  @IsOptional()
+  @IsString()
+  billingCity?: string;
+
+  @ApiPropertyOptional({ example: 'NY', description: 'Billing state or province.' })
+  @IsOptional()
+  @IsString()
+  billingState?: string;
+
+  @ApiPropertyOptional({ example: '10001', description: 'Billing postal/zip code.' })
+  @IsOptional()
+  @IsString()
+  billingZip?: string;
+
+  @ApiPropertyOptional({ example: 'United States', description: 'Billing country.' })
+  @IsOptional()
+  @IsString()
+  billingCountry?: string;
 }
 
 export class CreateClientResponse {
@@ -226,6 +251,21 @@ export class ClientListItemResponse {
     nullable: true,
   })
   clientCredit: ClientCredit | null;
+
+  @ApiProperty({ example: '123 Main St', description: 'Billing street address.', nullable: true })
+  billingAddress: string | null;
+
+  @ApiProperty({ example: 'New York', description: 'Billing city.', nullable: true })
+  billingCity: string | null;
+
+  @ApiProperty({ example: 'NY', description: 'Billing state or province.', nullable: true })
+  billingState: string | null;
+
+  @ApiProperty({ example: '10001', description: 'Billing postal/zip code.', nullable: true })
+  billingZip: string | null;
+
+  @ApiProperty({ example: 'United States', description: 'Billing country.', nullable: true })
+  billingCountry: string | null;
 
   @ApiProperty({
     example: '8f1e52bc-5a3c-4f5b-8f80-51f0b4649224',
@@ -303,6 +343,31 @@ export class UpdateClientInput {
   @IsOptional()
   @IsEnum(ClientCredit)
   clientCredit?: ClientCredit;
+
+  @ApiPropertyOptional({ example: '123 Main St', description: 'Updated billing street address.' })
+  @IsOptional()
+  @IsString()
+  billingAddress?: string;
+
+  @ApiPropertyOptional({ example: 'New York', description: 'Updated billing city.' })
+  @IsOptional()
+  @IsString()
+  billingCity?: string;
+
+  @ApiPropertyOptional({ example: 'NY', description: 'Updated billing state or province.' })
+  @IsOptional()
+  @IsString()
+  billingState?: string;
+
+  @ApiPropertyOptional({ example: '10001', description: 'Updated billing postal/zip code.' })
+  @IsOptional()
+  @IsString()
+  billingZip?: string;
+
+  @ApiPropertyOptional({ example: 'United States', description: 'Updated billing country.' })
+  @IsOptional()
+  @IsString()
+  billingCountry?: string;
 }
 
 export class UpdateClientResponse {

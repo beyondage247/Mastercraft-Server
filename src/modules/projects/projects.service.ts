@@ -119,8 +119,8 @@ const projectSelect = {
     select: {
       id: true,
       stage: true,
-      hoursBudgeted: true,
-      hoursSpent: true,
+      daysBudgeted: true,
+      daysSpent: true,
       progress: true,
       startDate: true,
     },
@@ -773,8 +773,8 @@ export class ProjectsService {
     if (!input) {
       return {
         stage,
-        hoursBudgeted: 0,
-        hoursSpent: 0,
+        daysBudgeted: 0,
+        daysSpent: 0,
         progress: 0,
         startDate: projectStartDate,
       };
@@ -792,8 +792,8 @@ export class ProjectsService {
 
     return {
       stage,
-      hoursBudgeted: input.hoursBudgeted,
-      hoursSpent: input.hoursSpent ?? 0,
+      daysBudgeted: input.daysBudgeted,
+      daysSpent: input.daysSpent ?? 0,
       progress: input.progress ?? 0,
       startDate,
     };
@@ -811,12 +811,12 @@ export class ProjectsService {
 
     const data: Prisma.ProjectStageUpdateInput = {};
 
-    if (input.hoursBudgeted !== undefined) {
-      data.hoursBudgeted = input.hoursBudgeted;
+    if (input.daysBudgeted !== undefined) {
+      data.daysBudgeted = input.daysBudgeted;
     }
 
-    if (input.hoursSpent !== undefined) {
-      data.hoursSpent = input.hoursSpent;
+    if (input.daysSpent !== undefined) {
+      data.daysSpent = input.daysSpent;
     }
 
     if (input.progress !== undefined) {
@@ -858,8 +858,8 @@ export class ProjectsService {
     if (!input) return false;
 
     return (
-      input.hoursBudgeted !== undefined ||
-      input.hoursSpent !== undefined ||
+      input.daysBudgeted !== undefined ||
+      input.daysSpent !== undefined ||
       input.progress !== undefined ||
       input.startDate !== undefined
     );

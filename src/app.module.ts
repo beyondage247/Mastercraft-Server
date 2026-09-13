@@ -14,6 +14,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CommissionsModule } from './modules/commissions/commissions.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     InventoryModule,
     CommissionsModule,
     DocumentsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
